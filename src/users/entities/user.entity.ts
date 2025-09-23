@@ -2,16 +2,7 @@ import { Category } from "../../categories/entities/category.entity";
 import { Skill } from "../../skills/entities/skill.entity";
 import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 import { IsEmail, IsOptional, Length, MinLength, IsDateString } from "class-validator";
-
-export enum UserRole {
-  USER = 'USER',
-  ADMIN = 'ADMIN'
-}
-
-export enum Gender {
-  MALE = 'MALE',
-  FEMALE = 'FEMALE'
-}
+import { Gender, UserRole } from "../users.enums";
 
 @Entity()
 export class User {
@@ -22,7 +13,7 @@ export class User {
     @Length(2, 50, { message: 'Имя должно быть от 2 до 50 символов' })
     name: string;
 
-    @Column()
+    @Column({ unique: true })
     @IsEmail({}, { message: 'Некорректный формат email' })
     email: string;
 
@@ -35,7 +26,7 @@ export class User {
     @Length(0, 500, { message: 'Информация о себе не должна превышать 500 символов' })
     about: string;
 
-    @Column()
+    @Column({ type: 'date' })
     @IsDateString({}, { message: 'Некорректный формат даты рождения' })
     @IsOptional()
     birthdate: Date;
@@ -53,17 +44,17 @@ export class User {
   @Column({ nullable: true })
   avatar: string;
 
-  @Column('simple-array', { nullable: true })
-  skills: string[];
+ // @Column('simple-array', { nullable: true })
+ // skills: string[];
 
-  @ManyToMany(() => Category)
-  @JoinTable()
-  wantToLearn: Category[];
+ // @ManyToMany(() => Category)
+ // @JoinTable()
+ // wantToLearn: Category[];
 
 
-  @ManyToMany(() => Skill)
-  @JoinTable()
-  favoriteSkills: Skill[];
+ // @ManyToMany(() => Skill)
+ // @JoinTable()
+ // favoriteSkills: Skill[];
 
   @Column({ 
     type: 'enum', 
