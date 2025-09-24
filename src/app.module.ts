@@ -6,10 +6,13 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
-import { appConfig } from './config/app.config';
-import { dbConfig } from './config/db.config';
-import { jwtConfig } from './config/jwt.config';
-import { IDbConfig, IJwtConfig } from './config/config.types';
+import {
+  appConfig,
+  dbConfig,
+  jwtConfig,
+  IDbConfig,
+  IJwtConfig,
+} from './config';
 
 @Module({
   imports: [
