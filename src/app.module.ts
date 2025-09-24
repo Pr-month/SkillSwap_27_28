@@ -5,22 +5,32 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AppDataSource } from './ormconfig';
+import { ConfigModule } from '@nestjs/config';
+import { appConfig } from './config/app.config';
+import { dbConfig } from './config/db.config';
+import { jwtConfig } from './config/jwt.config';
+import { IDbConfig, IJwtConfig } from './config/config.types';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      load: [appConfig, dbConfig, jwtConfig],
     }),
-    TypeOrmModule.forRoot(AppDataSource.options),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [dbConfig.KEY],
+      useFactory: (configService: IDbConfig) => ({
+        ...configService,
+      }),
+    }),
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const secret = configService.get<string>('JWT_SECRET');
-        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') ?? '3600';
+      inject: [jwtConfig.KEY],
+      useFactory: (configService: IJwtConfig) => {
+        const secret = configService.jwtSecret;
+        const expiresIn = configService.jwtExpiresIn;
 
         if (!secret) {
           throw new Error('JWT_SECRET is not defined');
