@@ -13,8 +13,8 @@ import { AppDataSource } from './ormconfig';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-    }),    
-    TypeOrmModule.forRoot(AppDataSource.options),    
+    }),
+    TypeOrmModule.forRoot(AppDataSource.options),
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],
