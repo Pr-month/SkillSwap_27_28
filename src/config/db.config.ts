@@ -1,4 +1,4 @@
-import { registerAs } from "@nestjs/config";
+import { registerAs } from '@nestjs/config';
 import { DataSourceOptions } from 'typeorm';
 import * as dotenv from 'dotenv';
 
@@ -13,8 +13,8 @@ export const dbConfig = registerAs(
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     database: process.env.DB_DATABASE || 'skillswap',
-    synchronize: Boolean(process.env.DB_SYNCHRONIZE) || true,
+    synchronize: process.env.NODE_ENV !== 'production',
     entities: [__dirname + '/**/*.entity{.ts,.js}'],
-    logging: true,
+    logging: process.env.NODE_ENV !== 'test',
   }),
 );
