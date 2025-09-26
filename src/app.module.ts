@@ -20,7 +20,7 @@ import { AppDataSource } from './ormconfig';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const secret = configService.get<string>('JWT_SECRET');
+        const secret = configService.get<string>('JWT_SECRET') || 'test';
         const expiresIn = configService.get<string>('JWT_EXPIRES_IN') ?? '3600';
 
         if (!secret) {
