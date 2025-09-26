@@ -18,7 +18,6 @@ export class User {
     email: string;
 
     @Column()
-    @MinLength(8, { message: 'Пароль должен быть не менее 8 символов' })
     password: string;
 
     @Column()
