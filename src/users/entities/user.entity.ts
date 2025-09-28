@@ -29,9 +29,8 @@ export class User {
   @IsEmail({}, { message: 'Некорректный формат email' })
   email: string;
 
-  @Column()
-  @MinLength(8, { message: 'Пароль должен быть не менее 8 символов' })
-  password: string;
+    @Column()
+    password: string;
 
   @Column()
   @IsOptional()
