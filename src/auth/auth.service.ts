@@ -1,5 +1,4 @@
 import {
-  // BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -12,17 +11,27 @@ import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/users.enums';
 import { RegisterDto } from './dto/register.dto';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+
+export interface Tokens {
+  accessToken: string;
+  refreshToken: string;
+}
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<{
     message: string;
     user: Omit<User, 'password' | 'refreshToken'>;
+    tokens: Tokens;
   }> {
     try {
       // Проверяем, существует ли пользователь с таким email
@@ -37,7 +46,7 @@ export class AuthService {
       }
 
       // Хешируем пароль
-      const saltRounds = 10;
+      const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
       const hashedPassword = await bcrypt.hash(
         registerDto.password,
         saltRounds,
@@ -53,23 +62,27 @@ export class AuthService {
       // Сохраняем пользователя в базе данных
       const savedUser = await this.userRepository.save(user);
 
+      // Генерируем токены
+      const tokens = await this._generateTokens({
+        userId: savedUser.id,
+        email: savedUser.email,
+        role: savedUser.role,
+      });
+
+      // Хешируем refresh token и сохраняем в БД
+      const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, saltRounds);
+      await this.userRepository.update(savedUser.id, {
+        refreshToken: hashedRefreshToken,
+      });
+
       // Убираем пароль и refreshToken из ответа
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, refreshToken, ...userWithoutSensitiveData } = savedUser;
-      // const {
-      //   password: _password,
-      //   refreshToken: _refreshToken,
-      //   ...userWithoutSensitiveData
-      // } = savedUser;
-      // Создаем объект пользователя без чувствительных данных
-      // const userWithoutSensitiveData = { ...savedUser };
-      // delete userWithoutSensitiveData.password;
-      // delete userWithoutSensitiveData.refreshToken;
-      // const userWithoutSensitiveData = this.excludeSensitiveData(savedUser);
 
       return {
         message: 'Пользователь успешно зарегистрирован',
         user: userWithoutSensitiveData,
+        tokens,
       };
     } catch (error) {
       if (error instanceof ConflictException) {
@@ -80,6 +93,28 @@ export class AuthService {
       );
     }
   }
+
+  private async _generateTokens(payload: {
+    userId: number;
+    email: string;
+    role: UserRole;
+  }): Promise<Tokens> {
+    const [accessToken, refreshToken] = await Promise.all([
+      // Access token - используем основной JWT модуль
+      this.jwtService.signAsync(payload),
+      // Refresh token - генерируем с отдельным секретом
+      this.jwtService.signAsync(payload, {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN')  || '604800',
+      }),
+    ]);
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
   // findAll() {
   //   return `This action returns all auth`;
   // }
