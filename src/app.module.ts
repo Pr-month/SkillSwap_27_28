@@ -18,11 +18,6 @@ import {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-<<<<<<< HEAD
-      envFilePath: '.env',
-    }),
-    TypeOrmModule.forRoot(AppDataSource.options),
-=======
       load: [appConfig, dbConfig, jwtConfig],
     }),
     TypeOrmModule.forRootAsync({
@@ -30,9 +25,9 @@ import {
       inject: [dbConfig.KEY],
       useFactory: (configService: IDbConfig) => ({
         ...configService,
+        autoLoadEntities: true
       }),
     }),
->>>>>>> week1
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],
@@ -57,4 +52,4 @@ import {
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

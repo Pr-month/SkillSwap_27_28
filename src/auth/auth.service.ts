@@ -85,6 +85,7 @@ export class AuthService {
         tokens,
       };
     } catch (error) {
+      console.log(error)
       if (error instanceof ConflictException) {
         throw error;
       }
