@@ -13,7 +13,6 @@ import {
   IDbConfig,
   IJwtConfig,
 } from './config';
-import { JwtStrategy } from './auth/strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -51,6 +50,6 @@ import { JwtStrategy } from './auth/strategies/jwt.strategy';
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService, JwtStrategy],
+  providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
