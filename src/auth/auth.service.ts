@@ -123,8 +123,7 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto) {
-    const { email, password } = loginDto;
+  async login({ email, password }: LoginDto) {
     //ищем юзера по имэйлу
     const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
@@ -142,22 +141,30 @@ export class AuthService {
       email: user.email,
       role: user.role,
     });
+    // Убираем пароль и refreshToken из ответа
 
+    const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      password: userPassword,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      refreshToken,
+      ...userWithoutSensitiveData
+    } = user;
     return {
       message: 'Вход выполнен',
-      user,
+      user: userWithoutSensitiveData,
       ...tokens,
     };
   }
 
-  async logout(userId: string): Promise<{ message: string }> {
+  async logout(userId: number): Promise<{ message: string }> {
     // проверка наличия юзера
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('Пользователь не найден');
     }
     // Удаляем refresh токен из БД
-    await this.userRepository.update(userId, null);
+    await this.userRepository.update(userId, { refreshToken: '' });
     return { message: 'Выход выполнен' };
   }
 }
