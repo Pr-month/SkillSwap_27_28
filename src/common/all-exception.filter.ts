@@ -3,6 +3,7 @@ import {
   ArgumentsHost,
   Catch,
   ExceptionFilter,
+  HttpException,
   NotFoundException,
   PayloadTooLargeException,
 } from '@nestjs/common';
@@ -29,6 +30,11 @@ export class AllExpectionFilter implements ExceptionFilter {
     if (exception instanceof PayloadTooLargeException) {
       status = 413;
       message = 'Файл слишком большой';
+    }
+
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      message = exception.message;
     }
 
     return res.status(status).json({
