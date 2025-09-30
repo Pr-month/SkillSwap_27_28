@@ -13,6 +13,7 @@ import { UserRole } from '../users/users.enums';
 import { RegisterDto } from './dto/register.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { IJwtConfig } from '../config/config.types';
 
 export interface Tokens {
   accessToken: string;
@@ -45,9 +46,11 @@ export class AuthService {
         );
       }
 
+      // Получаем конфигурацию JWT
+      const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
+
       // Хешируем пароль
-      const saltRounds =
-        this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+      const saltRounds = jwtConfig.saltRounds;
       const hashedPassword = await bcrypt.hash(
         registerDto.password,
         saltRounds,
@@ -104,13 +107,14 @@ export class AuthService {
     email: string;
     role: UserRole;
   }): Promise<Tokens> {
+    const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
     const [accessToken, refreshToken] = await Promise.all([
       // Access token - используем основной JWT модуль
       this.jwtService.signAsync(payload),
       // Refresh token - генерируем с отдельным секретом
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN') || '604800',
+        secret: jwtConfig.jwtRefreshSecret,
+        expiresIn: jwtConfig.jwtRefreshExpiresIn,
       }),
     ]);
 

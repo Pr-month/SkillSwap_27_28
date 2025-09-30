@@ -4,6 +4,14 @@ import { appConfig } from './app.config';
 import { dbConfig } from './db.config';
 import { jwtConfig } from './jwt.config';
 
+export interface IJwtConfig {
+  jwtSecret: string;
+  jwtExpiresIn: string;
+  jwtRefreshSecret: string;
+  jwtRefreshExpiresIn: string;
+  saltRounds: number;
+}
+
 export type IAppConfig = ConfigType<typeof appConfig>;
 export type IDbConfig = ConfigType<typeof dbConfig>;
-export type IJwtConfig = ConfigType<typeof jwtConfig>;
+// export type IJwtConfig = ConfigType<typeof jwtConfig>;
