@@ -46,7 +46,8 @@ export class AuthService {
       }
 
       // Хешируем пароль
-      const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+      const saltRounds =
+        this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
       const hashedPassword = await bcrypt.hash(
         registerDto.password,
         saltRounds,
@@ -70,7 +71,10 @@ export class AuthService {
       });
 
       // Хешируем refresh token и сохраняем в БД
-      const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, saltRounds);
+      const hashedRefreshToken = await bcrypt.hash(
+        tokens.refreshToken,
+        saltRounds,
+      );
       await this.userRepository.update(savedUser.id, {
         refreshToken: hashedRefreshToken,
       });
@@ -85,7 +89,7 @@ export class AuthService {
         tokens,
       };
     } catch (error) {
-      console.log(error)
+      console.log(error);
       if (error instanceof ConflictException) {
         throw error;
       }
@@ -106,7 +110,7 @@ export class AuthService {
       // Refresh token - генерируем с отдельным секретом
       this.jwtService.signAsync(payload, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN')  || '604800',
+        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN') || '604800',
       }),
     ]);
 
