@@ -29,8 +29,8 @@ export class User {
   @IsEmail({}, { message: 'Некорректный формат email' })
   email: string;
 
-    @Column()
-    password: string;
+  @Column()
+  password: string;
 
   @Column()
   @IsOptional()

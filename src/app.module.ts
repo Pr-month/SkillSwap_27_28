@@ -25,7 +25,7 @@ import {
       inject: [dbConfig.KEY],
       useFactory: (configService: IDbConfig) => ({
         ...configService,
-        autoLoadEntities: true
+        autoLoadEntities: true,
       }),
     }),
     JwtModule.registerAsync({
@@ -52,4 +52,4 @@ import {
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
