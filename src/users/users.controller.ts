@@ -8,9 +8,14 @@ import {
   Delete,
   UseGuards,
   Request,
+  Patch,
+  HttpCode,
+  HttpStatus,
+  Body,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 // import { CreateUserDto } from './dto/create-user.dto';
 // import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -37,6 +42,20 @@ export class UsersController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
+  }
+
+  @Patch('me/password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updatePassword(
+    @Request() req,
+    @Body() updatePasswordDto: UpdatePasswordDto,
+  ) {
+    await this.usersService.updatePassword(req.user.id, updatePasswordDto);
+    return { 
+      message: 'Пароль успешно обновлен',
+      statusCode: HttpStatus.OK
+    };
   }
 
   // @Patch(':id')
