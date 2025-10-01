@@ -5,7 +5,7 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'refresh-jwt') {
   constructor() {
-    const secret = process.env.JWT_REFRESH_SECRET;
+    const secret = process.env.JWT_REFRESH_SECRET || 'test';
     if (!secret) {
       throw new Error('JWT_REFRESH_SECRET is not defined');
     }
