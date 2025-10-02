@@ -1,0 +1,28 @@
+import { Controller, Post, UseInterceptors, UploadedFile, Req } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { FilesService } from './files.service';
+
+@Controller('upload')
+export class FilesController {
+  constructor(private filesService: FilesService) {}
+
+  @Post()
+  @UseInterceptors(FileInterceptor('image', {
+    storage: diskStorage({
+      destination: './public/uploads',
+      filename: (req, file, cb) => {
+        const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+        cb(null, `${randomName}${extname(file.originalname)}`);
+      }
+    }),
+    limits: {
+      fileSize: 2 * 1024 * 1024 // 2MB
+    }
+  }))
+  async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    return this.filesService.saveFile(file, baseUrl);
+  }
+}

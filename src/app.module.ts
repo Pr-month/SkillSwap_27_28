@@ -13,6 +13,7 @@ import {
   IDbConfig,
   IJwtConfig,
 } from './config';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import {
     }),
     UsersModule,
     AuthModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
