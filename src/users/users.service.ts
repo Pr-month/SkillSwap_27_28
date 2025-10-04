@@ -21,32 +21,21 @@ export class UsersService {
   //   return 'This action adds a new user';
   // }
 
-  findAll() {
-    return this.usersRepository.find({
-      select: ['id', 'name', 'email', 'about', 'city', 'avatar', 'role'], // исключаем пароль
+  async findAll() {
+    return await this.usersRepository.find();
+  }
+
+  async findOne(id: number) {
+    return await this.usersRepository.findOne({
+      where: { id },
+      // relations: ['favoriteSkills'], 
     });
   }
 
-  findOne(id: number) {
-    return this.usersRepository.findOne({
+  async findById(id: number): Promise<User> {
+    return await this.usersRepository.findOneOrFail({
       where: { id },
-      select: ['id', 'name', 'email', 'about', 'birthdate', 'city', 'gender', 'avatar', 'skills', 'role'], // исключаем пароль и refreshToken
-      relations: ['favoriteSkills'], // если нужны связанные навыки
     });
-  }
-
-  async findById(id: number): Promise<UserResponseDto> {
-    const user = await this.usersRepository.findOne({
-      where: { id },
-      select: ['id', 'name', 'email', 'about', 'birthdate', 'city', 'gender', 'avatar', 'skills', 'role'], // исключаем чувствительные данные
-      relations: ['favoriteSkills'], // добавляем связанные навыки
-    });
-    
-    if (!user) {
-      throw new NotFoundException('Пользователь не найден');
-    }
-    
-    return user;
   }
 
   async updatePassword(userId: number, updatePasswordDto: UpdatePasswordDto): Promise<void> {

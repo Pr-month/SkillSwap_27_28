@@ -43,7 +43,7 @@ export class Skill {
   @IsUrl({}, { each: true, message: 'Каждая ссылка должна быть валидным URL' })
   images: string[];
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User, (user) => user.skills)
   @JoinColumn()
   @IsNotEmpty({ message: 'Владелец навыка обязателен' })
   owner: User;

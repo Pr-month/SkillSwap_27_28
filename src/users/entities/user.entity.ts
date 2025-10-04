@@ -4,6 +4,7 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import {
@@ -15,6 +16,7 @@ import {
 } from 'class-validator';
 import { Gender, UserRole } from '../users.enums';
 import { Skill } from '../../skills/entities/skill.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class User {
@@ -30,6 +32,7 @@ export class User {
   email: string;
 
   @Column()
+  @Exclude()
   password: string;
 
   @Column()
@@ -57,16 +60,16 @@ export class User {
   @Column({ nullable: true })
   avatar: string;
 
-  @Column('simple-array', { nullable: true })
-  skills: string[];
+  @OneToMany(() => Skill, (skill) => skill.owner)
+  skills: Skill[];
 
   // @ManyToMany(() => Category)
   // @JoinTable()
   // wantToLearn: Category[];
 
-  @ManyToMany(() => Skill)
-  @JoinTable()
-  favoriteSkills: Skill[];
+  // @ManyToMany(() => Skill)
+  // @JoinTable()
+  // favoriteSkills: Skill[];
 
   @Column({
     type: 'enum',
@@ -76,5 +79,6 @@ export class User {
   role: UserRole;
 
   @Column({ nullable: true })
+  @Exclude()
   refreshToken: string;
 }

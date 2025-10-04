@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -12,8 +13,9 @@ import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/users.enums';
 import { RegisterDto } from './dto/register.dto';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+// import { ConfigService } from '@nestjs/config';
 import { IJwtConfig } from '../config/config.types';
+import { jwtConfig } from 'src/config/jwt.config';
 
 export interface Tokens {
   accessToken: string;
@@ -26,7 +28,9 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    // private readonly configService: ConfigService,
+    @Inject(jwtConfig.KEY) // Инжектим конкретный конфиг по ключу
+    private readonly jwtConfig: IJwtConfig,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<{
@@ -47,14 +51,15 @@ export class AuthService {
       }
 
       // Получаем конфигурацию JWT
-      const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
+      // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
 
       // Хешируем пароль
-      const saltRounds = jwtConfig.saltRounds;
+      const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
       const hashedPassword = await bcrypt.hash(
         registerDto.password,
         saltRounds,
       );
+      
 
       // Создаем нового пользователя
       const user = this.userRepository.create({
@@ -78,6 +83,12 @@ export class AuthService {
         tokens.refreshToken,
         saltRounds,
       );
+      // const hashedPassword = await bcrypt.hash(
+      //   registerDto.password,
+      //   this.jwtConfig.saltRounds, // ← используем напрямую
+      // );
+
+
       await this.userRepository.update(savedUser.id, {
         refreshToken: hashedRefreshToken,
       });
@@ -107,14 +118,14 @@ export class AuthService {
     email: string;
     role: UserRole;
   }): Promise<Tokens> {
-    const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
+    // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
     const [accessToken, refreshToken] = await Promise.all([
       // Access token - используем основной JWT модуль
       this.jwtService.signAsync(payload),
       // Refresh token - генерируем с отдельным секретом
       this.jwtService.signAsync(payload, {
-        secret: jwtConfig.jwtRefreshSecret,
-        expiresIn: jwtConfig.jwtRefreshExpiresIn,
+        secret: this.jwtConfig.jwtRefreshSecret,
+        expiresIn: this.jwtConfig.jwtRefreshExpiresIn,
       }),
     ]);
 

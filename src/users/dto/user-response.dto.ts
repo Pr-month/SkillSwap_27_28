@@ -11,6 +11,6 @@ export class UserResponseDto {
   gender: Gender;
   avatar: string;
   skills: string[];
-  favoriteSkills: Skill[];
+  // favoriteSkills: Skill[];
   role: UserRole;
 }
