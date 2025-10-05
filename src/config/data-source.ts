@@ -9,11 +9,10 @@ export const initializeDataSource = async (): Promise<DataSource> => {
     try {
       await AppDataSource.initialize();
       console.log('Database connection established successfully');
-      
+
       // Проверяем соединение
       await AppDataSource.query('SELECT 1');
       console.log('Database health check passed');
-      
     } catch (error) {
       console.error('Error during Data Source initialization:', error);
       throw error;

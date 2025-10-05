@@ -1,5 +1,4 @@
 import { Gender, UserRole } from '../users.enums';
-import { Skill } from '../../skills/entities/skill.entity';
 
 export class UserResponseDto {
   id: number;

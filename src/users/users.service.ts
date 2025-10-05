@@ -1,11 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
-import { UserResponseDto } from './dto/user-response.dto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { UpdatePasswordDto } from './dto/update-password.dto';
+import { InjectRepository } from '@nestjs/typeorm';
 import * as bcryptjs from 'bcrypt';
+import { Repository } from 'typeorm';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { User } from './entities/user.entity';
 // import { CreateUserDto } from './dto/create-user.dto';
 // import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -28,7 +32,7 @@ export class UsersService {
   async findOne(id: number) {
     return await this.usersRepository.findOne({
       where: { id },
-      // relations: ['favoriteSkills'], 
+      // relations: ['favoriteSkills'],
     });
   }
 
@@ -38,7 +42,10 @@ export class UsersService {
     });
   }
 
-  async updatePassword(userId: number, updatePasswordDto: UpdatePasswordDto): Promise<void> {
+  async updatePassword(
+    userId: number,
+    updatePasswordDto: UpdatePasswordDto,
+  ): Promise<void> {
     // Находим пользователя с паролем для проверки
     const user = await this.usersRepository.findOne({
       where: { id: userId },
@@ -52,7 +59,7 @@ export class UsersService {
     // Проверяем текущий пароль (используем тот же подход, что и в auth.service)
     const isCurrentPasswordValid = await bcryptjs.compare(
       updatePasswordDto.currentPassword,
-      user.password
+      user.password,
     );
 
     if (!isCurrentPasswordValid) {
@@ -62,16 +69,22 @@ export class UsersService {
     // Проверяем, что новый пароль отличается от текущего
     const isSamePassword = await bcryptjs.compare(
       updatePasswordDto.newPassword,
-      user.password
+      user.password,
     );
 
     if (isSamePassword) {
-      throw new BadRequestException('Новый пароль должен отличаться от текущего');
+      throw new BadRequestException(
+        'Новый пароль должен отличаться от текущего',
+      );
     }
 
     // Хешируем новый пароль (используем ту же логику, что и в auth.service)
-    const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
-    const hashedPassword = await bcryptjs.hash(updatePasswordDto.newPassword, saltRounds);
+    const saltRounds =
+      this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+    const hashedPassword = await bcryptjs.hash(
+      updatePasswordDto.newPassword,
+      saltRounds,
+    );
 
     // Обновляем пароль
     await this.usersRepository.update(userId, {

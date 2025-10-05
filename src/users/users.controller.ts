@@ -52,9 +52,9 @@ export class UsersController {
     @Body() updatePasswordDto: UpdatePasswordDto,
   ) {
     await this.usersService.updatePassword(req.user.id, updatePasswordDto);
-    return { 
+    return {
       message: 'Пароль успешно обновлен',
-      statusCode: HttpStatus.OK
+      statusCode: HttpStatus.OK,
     };
   }
 

@@ -3,22 +3,21 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
-  UnauthorizedException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 // import { CreateAuthDto } from './dto/create-auth.dto';
 // import { UpdateAuthDto } from './dto/update-auth.dto';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { jwtConfig } from 'src/config/jwt.config';
+import { Repository } from 'typeorm';
+import { IJwtConfig } from '../config/config.types';
 import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/users.enums';
-import { RegisterDto } from './dto/register.dto';
-import { JwtService } from '@nestjs/jwt';
-import { IJwtConfig } from '../config/config.types';
-import { jwtConfig } from 'src/config/jwt.config';
-import { ConfigService } from '@nestjs/config';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 export interface Tokens {
   accessToken: string;
@@ -62,7 +61,6 @@ export class AuthService {
         registerDto.password,
         saltRounds,
       );
-      
 
       // Создаем нового пользователя
       const user = this.userRepository.create({

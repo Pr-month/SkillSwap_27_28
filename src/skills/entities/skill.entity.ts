@@ -1,18 +1,17 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
-import {
+  IsArray,
   IsNotEmpty,
   IsOptional,
-  IsArray,
   IsUrl,
   Length,
 } from 'class-validator';
-import { User } from '../../users/entities/user.entity';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Category } from '../../categories/entities/category.entity';
 
 @Entity()
@@ -43,10 +42,10 @@ export class Skill {
   @IsUrl({}, { each: true, message: 'Каждая ссылка должна быть валидным URL' })
   images: string[];
 
-  @ManyToOne(() => User, (user) => user.skills)
-  @JoinColumn()
-  @IsNotEmpty({ message: 'Владелец навыка обязателен' })
-  owner: User;
+  // @ManyToOne(() => User, (user) => user.skills)  //toDo расскоментировать, когда у skills появится модуль
+  // @JoinColumn()
+  // @IsNotEmpty({ message: 'Владелец навыка обязателен' })
+  // owner: User;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
