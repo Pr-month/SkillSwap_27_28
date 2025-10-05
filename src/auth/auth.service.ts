@@ -3,6 +3,8 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 // import { CreateAuthDto } from './dto/create-auth.dto';
 // import { UpdateAuthDto } from './dto/update-auth.dto';
@@ -13,9 +15,10 @@ import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/users.enums';
 import { RegisterDto } from './dto/register.dto';
 import { JwtService } from '@nestjs/jwt';
-// import { ConfigService } from '@nestjs/config';
 import { IJwtConfig } from '../config/config.types';
 import { jwtConfig } from 'src/config/jwt.config';
+import { ConfigService } from '@nestjs/config';
+import { LoginDto } from './dto/login.dto';
 
 export interface Tokens {
   accessToken: string;
@@ -83,12 +86,6 @@ export class AuthService {
         tokens.refreshToken,
         saltRounds,
       );
-      // const hashedPassword = await bcrypt.hash(
-      //   registerDto.password,
-      //   this.jwtConfig.saltRounds, // ← используем напрямую
-      // );
-
-
       await this.userRepository.update(savedUser.id, {
         refreshToken: hashedRefreshToken,
       });
@@ -135,19 +132,48 @@ export class AuthService {
     };
   }
 
-  // findAll() {
-  //   return `This action returns all auth`;
-  // }
+  async login({ email, password }: LoginDto) {
+    //ищем юзера по имэйлу
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new UnauthorizedException('Неверный email или пароль');
+    }
+    //сверяем пароль
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Неверный email или пароль');
+    }
 
-  // findOne(id: number) {
-  //   return `This action returns a #${id} auth`;
-  // }
+    // генерим токены
+    const tokens = await this._generateTokens({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+    // Убираем пароль и refreshToken из ответа
 
-  // update(id: number, updateAuthDto: UpdateAuthDto) {
-  //   return `This action updates a #${id} auth`;
-  // }
+    const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      password: userPassword,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      refreshToken,
+      ...userWithoutSensitiveData
+    } = user;
+    return {
+      message: 'Вход выполнен',
+      user: userWithoutSensitiveData,
+      ...tokens,
+    };
+  }
 
-  // remove(id: number) {
-  //   return `This action removes a #${id} auth`;
-  // }
+  async logout(userId: number): Promise<{ message: string }> {
+    // проверка наличия юзера
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+    // Удаляем refresh токен из БД
+    await this.userRepository.update(userId, { refreshToken: '' });
+    return { message: 'Выход выполнен' };
+  }
 }
