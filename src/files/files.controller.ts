@@ -2,12 +2,9 @@ import { Controller, Post, UseInterceptors, UploadedFile, Req } from '@nestjs/co
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { FilesService } from './files.service';
 
 @Controller('upload')
 export class FilesController {
-  constructor(private filesService: FilesService) {}
-
   @Post()
   @UseInterceptors(FileInterceptor('image', {
     storage: diskStorage({
@@ -23,6 +20,8 @@ export class FilesController {
   }))
   async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    return this.filesService.saveFile(file, baseUrl);
+    return {
+      publicUrl: `${baseUrl}/uploads/${file.filename}`
+    };
   }
 }
