@@ -1,19 +1,13 @@
 // import { Category } from '../../categories/entities/category.entity';
-// import { Skill } from '../../skills/entities/skill.entity';
+import { Exclude } from 'class-transformer';
 import {
-  Column,
-  Entity,
-  // JoinTable,
-  // ManyToMany,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import {
+  // MinLength,
+  IsDateString,
   IsEmail,
   IsOptional,
   Length,
-  MinLength,
-  IsDateString,
 } from 'class-validator';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { Gender, UserRole } from '../users.enums';
 
 @Entity()
@@ -30,6 +24,7 @@ export class User {
   email: string;
 
   @Column()
+  @Exclude()
   password: string;
 
   @Column()
@@ -57,8 +52,8 @@ export class User {
   @Column({ nullable: true })
   avatar: string;
 
-  // @Column('simple-array', { nullable: true })
-  // skills: string[];
+  // @OneToMany(() => Skill, (skill) => skill.owner) //toDo расскоментировать, когда у skills появится модуль
+  // skills: Skill[];
 
   // @ManyToMany(() => Category)
   // @JoinTable()
@@ -76,5 +71,6 @@ export class User {
   role: UserRole;
 
   @Column({ nullable: true })
+  @Exclude()
   refreshToken: string;
 }
