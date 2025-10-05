@@ -2,6 +2,8 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 // import { CreateAuthDto } from './dto/create-auth.dto';
 // import { UpdateAuthDto } from './dto/update-auth.dto';
@@ -13,6 +15,7 @@ import { UserRole } from '../users/users.enums';
 import { RegisterDto } from './dto/register.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { LoginDto } from './dto/login.dto';
 
 export interface Tokens {
   accessToken: string;
@@ -46,7 +49,8 @@ export class AuthService {
       }
 
       // Хешируем пароль
-      const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+      const saltRounds =
+        this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
       const hashedPassword = await bcrypt.hash(
         registerDto.password,
         saltRounds,
@@ -70,7 +74,10 @@ export class AuthService {
       });
 
       // Хешируем refresh token и сохраняем в БД
-      const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, saltRounds);
+      const hashedRefreshToken = await bcrypt.hash(
+        tokens.refreshToken,
+        saltRounds,
+      );
       await this.userRepository.update(savedUser.id, {
         refreshToken: hashedRefreshToken,
       });
@@ -85,7 +92,7 @@ export class AuthService {
         tokens,
       };
     } catch (error) {
-      console.log(error)
+      console.log(error);
       if (error instanceof ConflictException) {
         throw error;
       }
@@ -106,7 +113,7 @@ export class AuthService {
       // Refresh token - генерируем с отдельным секретом
       this.jwtService.signAsync(payload, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN')  || '604800',
+        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN') || '604800',
       }),
     ]);
 
@@ -116,19 +123,48 @@ export class AuthService {
     };
   }
 
-  // findAll() {
-  //   return `This action returns all auth`;
-  // }
+  async login({ email, password }: LoginDto) {
+    //ищем юзера по имэйлу
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new UnauthorizedException('Неверный email или пароль');
+    }
+    //сверяем пароль
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Неверный email или пароль');
+    }
 
-  // findOne(id: number) {
-  //   return `This action returns a #${id} auth`;
-  // }
+    // генерим токены
+    const tokens = await this._generateTokens({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+    // Убираем пароль и refreshToken из ответа
 
-  // update(id: number, updateAuthDto: UpdateAuthDto) {
-  //   return `This action updates a #${id} auth`;
-  // }
+    const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      password: userPassword,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      refreshToken,
+      ...userWithoutSensitiveData
+    } = user;
+    return {
+      message: 'Вход выполнен',
+      user: userWithoutSensitiveData,
+      ...tokens,
+    };
+  }
 
-  // remove(id: number) {
-  //   return `This action removes a #${id} auth`;
-  // }
+  async logout(userId: number): Promise<{ message: string }> {
+    // проверка наличия юзера
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+    // Удаляем refresh токен из БД
+    await this.userRepository.update(userId, { refreshToken: '' });
+    return { message: 'Выход выполнен' };
+  }
 }
