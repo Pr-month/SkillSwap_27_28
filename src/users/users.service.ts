@@ -1,21 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { User } from './entities/user.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Injectable, NotFoundException, UnauthorizedException, BadRequestException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { UpdatePasswordDto } from "./dto/update-password.dto";
+import { User } from "./entities/user.entity";
 import * as bcryptjs from 'bcrypt';
-import { Repository } from 'typeorm';
-import { UpdatePasswordDto } from './dto/update-password.dto';
-import { User } from './entities/user.entity';
-// import { CreateUserDto } from './dto/create-user.dto';
-// import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -34,7 +23,7 @@ export class UsersService {
   }
 
   async findOne(id: number) {
-    return await this.usersRepository.findOne({
+    return await this.usersRepository.findOneOrFail({
       where: { id },
       // relations: ['favoriteSkills'],
     });
