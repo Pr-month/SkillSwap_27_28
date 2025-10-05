@@ -14,6 +14,7 @@ import {
   Body,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { User } from './entities/user.entity';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 // import { CreateUserDto } from './dto/create-user.dto';
@@ -29,7 +30,7 @@ export class UsersController {
   // }
 
   @Get()
-  findAll() {
+  async findAll(): Promise<User[]> {
     return this.usersService.findAll();
   }
 
@@ -40,7 +41,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string): Promise<User> {
     return this.usersService.findOne(+id);
   }
 
