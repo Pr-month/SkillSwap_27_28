@@ -4,9 +4,10 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
-  NotFoundException,
+  HttpStatus,
   PayloadTooLargeException,
 } from '@nestjs/common';
+import { EntityNotFoundError } from 'typeorm';
 
 @Catch()
 export class AllExpectionFilter implements ExceptionFilter {
@@ -14,10 +15,10 @@ export class AllExpectionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
 
-    let status: number = 404;
-    let message: string = 'Текст ошибки';
+    let status: number = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message: string = 'Internal server error';
 
-    if (exception instanceof NotFoundException) {
+    if (exception instanceof EntityNotFoundError) {
       status = 404;
       message = exception.message || 'Cущность не найдена';
     }
