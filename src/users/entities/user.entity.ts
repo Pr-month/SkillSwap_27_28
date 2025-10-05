@@ -1,20 +1,22 @@
 // import { Category } from '../../categories/entities/category.entity';
-// import { Skill } from '../../skills/entities/skill.entity';
 import {
   Column,
   Entity,
-  // JoinTable,
-  // ManyToMany,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import {
   IsEmail,
   IsOptional,
   Length,
-  MinLength,
+  // MinLength,
   IsDateString,
 } from 'class-validator';
 import { Gender, UserRole } from '../users.enums';
+import { Skill } from '../../skills/entities/skill.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class User {
@@ -29,8 +31,9 @@ export class User {
   @IsEmail({}, { message: 'Некорректный формат email' })
   email: string;
 
-    @Column()
-    password: string;
+  @Column()
+  @Exclude()
+  password: string;
 
   @Column()
   @IsOptional()
@@ -57,8 +60,8 @@ export class User {
   @Column({ nullable: true })
   avatar: string;
 
-  // @Column('simple-array', { nullable: true })
-  // skills: string[];
+  @OneToMany(() => Skill, (skill) => skill.owner)
+  skills: Skill[];
 
   // @ManyToMany(() => Category)
   // @JoinTable()
@@ -76,5 +79,6 @@ export class User {
   role: UserRole;
 
   @Column({ nullable: true })
+  @Exclude()
   refreshToken: string;
 }

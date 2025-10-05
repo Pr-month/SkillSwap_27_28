@@ -26,7 +26,7 @@ import { JwtStrategy } from './auth/strategies/jwt.strategy';
       inject: [dbConfig.KEY],
       useFactory: (configService: IDbConfig) => ({
         ...configService,
-        autoLoadEntities: true
+        autoLoadEntities: true,
       }),
     }),
     JwtModule.registerAsync({
@@ -53,4 +53,6 @@ import { JwtStrategy } from './auth/strategies/jwt.strategy';
   controllers: [AppController],
   providers: [AppService, JwtStrategy],
 })
-export class AppModule { }
+
+export class AppModule {}
+

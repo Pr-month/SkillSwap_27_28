@@ -6,9 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User]),
-  ConfigModule,  
-],
+  imports: [TypeOrmModule.forFeature([User])],
   controllers: [AuthController],
   providers: [AuthService],
 })

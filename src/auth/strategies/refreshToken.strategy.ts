@@ -1,15 +1,18 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { PassportStrategy } from "@nestjs/passport";
-import { ExtractJwt, Strategy } from "passport-jwt";
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
 
 @Injectable()
-export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'refresh-jwt') {
+export class RefreshTokenStrategy extends PassportStrategy(
+  Strategy,
+  'refresh-jwt',
+) {
   constructor() {
     const secret = process.env.JWT_REFRESH_SECRET || 'test';
     if (!secret) {
       throw new Error('JWT_REFRESH_SECRET is not defined');
     }
-    
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: secret,

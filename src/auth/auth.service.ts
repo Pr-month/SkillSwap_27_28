@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -14,6 +15,8 @@ import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/users.enums';
 import { RegisterDto } from './dto/register.dto';
 import { JwtService } from '@nestjs/jwt';
+import { IJwtConfig } from '../config/config.types';
+import { jwtConfig } from 'src/config/jwt.config';
 import { ConfigService } from '@nestjs/config';
 import { LoginDto } from './dto/login.dto';
 
@@ -28,7 +31,9 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    // private readonly configService: ConfigService,
+    @Inject(jwtConfig.KEY) // Инжектим конкретный конфиг по ключу
+    private readonly jwtConfig: IJwtConfig,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<{
@@ -48,13 +53,16 @@ export class AuthService {
         );
       }
 
+      // Получаем конфигурацию JWT
+      // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
+
       // Хешируем пароль
-      const saltRounds =
-        this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+      const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
       const hashedPassword = await bcrypt.hash(
         registerDto.password,
         saltRounds,
       );
+      
 
       // Создаем нового пользователя
       const user = this.userRepository.create({
@@ -107,13 +115,14 @@ export class AuthService {
     email: string;
     role: UserRole;
   }): Promise<Tokens> {
+    // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
     const [accessToken, refreshToken] = await Promise.all([
       // Access token - используем основной JWT модуль
       this.jwtService.signAsync(payload),
       // Refresh token - генерируем с отдельным секретом
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN') || '604800',
+        secret: this.jwtConfig.jwtRefreshSecret,
+        expiresIn: this.jwtConfig.jwtRefreshExpiresIn,
       }),
     ]);
 
