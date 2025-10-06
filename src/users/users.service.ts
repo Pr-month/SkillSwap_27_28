@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException, UnauthorizedException, BadRequestException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { UpdatePasswordDto } from "./dto/update-password.dto";
-import { User } from "./entities/user.entity";
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { User } from './entities/user.entity';
 import * as bcryptjs from 'bcrypt';
 
 @Injectable()

@@ -14,10 +14,11 @@ import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { AuthRequest } from '../auth/types';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Get()
   async findAll(): Promise<User[]> {
@@ -26,8 +27,8 @@ export class UsersController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  getCurrentUser(@Request() req) {
-    return this.usersService.findById(req.user.id);
+  getCurrentUser(@Request() req: AuthRequest) {
+    return this.usersService.findById(req.user._id);
   }
 
   @Get(':id')
@@ -39,10 +40,10 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async updatePassword(
-    @Request() req,
+    @Request() req: AuthRequest,
     @Body() updatePasswordDto: UpdatePasswordDto,
   ) {
-    await this.usersService.updatePassword(req.user.id, updatePasswordDto);
+    await this.usersService.updatePassword(req.user._id, updatePasswordDto);
     return {
       message: 'Пароль успешно обновлен',
       statusCode: HttpStatus.OK,
