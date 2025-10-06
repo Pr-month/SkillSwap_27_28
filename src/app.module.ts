@@ -15,6 +15,7 @@ import {
 } from './config';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
 import { SkillsModule } from './skills/skills.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { SkillsModule } from './skills/skills.module';
     UsersModule,
     AuthModule,
     SkillsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],
