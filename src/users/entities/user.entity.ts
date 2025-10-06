@@ -7,8 +7,9 @@ import {
   IsOptional,
   Length,
 } from 'class-validator';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Gender, UserRole } from '../users.enums';
+import { Skill } from 'src/skills/entities/skill.entity';
 
 @Entity()
 export class User {
@@ -52,8 +53,8 @@ export class User {
   @Column({ nullable: true })
   avatar: string;
 
-  // @OneToMany(() => Skill, (skill) => skill.owner) //toDo расскоментировать, когда у skills появится модуль
-  // skills: Skill[];
+  @OneToMany(() => Skill, (skill) => skill.owner) 
+  skills: Skill[];
 
   // @ManyToMany(() => Category)
   // @JoinTable()

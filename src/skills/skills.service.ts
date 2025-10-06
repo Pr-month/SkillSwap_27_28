@@ -6,17 +6,17 @@ import {
 import { AllSkillsDto, SkillDto } from './dto/skills.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-// import { User } from '../users/entities/user.entity';
 import { Skill } from '../skills/entities/skill.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class SkillsService {
   constructor(
-    // @InjectRepository(User)
-    // private readonly userRepository: Repository<User>,
     @InjectRepository(Skill)
     private readonly skillsRepository: Repository<Skill>,
-  ) {}
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) { }
   async findAll(dto: AllSkillsDto) {
     const { page = 1, limit = 20, search = '', category } = dto;
     const skip = (page - 1) * limit;
@@ -48,9 +48,10 @@ export class SkillsService {
   }
 
   async create(dto: SkillDto, ownerId: number) {
+    const owner = await this.userRepository.findOneOrFail({ where: { id: ownerId } })
     const skill = this.skillsRepository.create({
       ...dto,
-      ownerId,
+      owner,
     });
     return await this.skillsRepository.save(skill);
   }
@@ -58,7 +59,7 @@ export class SkillsService {
   async update(id: number, dto: SkillDto, ownerId: number) {
     const skill = await this.skillsRepository.findOneBy({ id });
     if (!skill) throw new NotFoundException('Навык не найден');
-    if (skill.ownerId !== ownerId) {
+    if (skill.owner.id !== ownerId) {
       throw new ForbiddenException('Недостаточно прав');
     }
     await this.skillsRepository.update(id, dto);
@@ -68,7 +69,7 @@ export class SkillsService {
   async remove(id: number, ownerId: number) {
     const skill = await this.skillsRepository.findOneBy({ id });
     if (!skill) throw new NotFoundException('Навык не найден');
-    if (skill.ownerId !== ownerId) {
+    if (skill.owner.id !== ownerId) {
       throw new ForbiddenException('Недостаточно прав');
     }
     await this.skillsRepository.delete(id);

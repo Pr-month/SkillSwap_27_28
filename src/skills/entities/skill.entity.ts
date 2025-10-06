@@ -13,6 +13,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Category } from '../../categories/entities/category.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Entity()
 export class Skill {
@@ -31,10 +32,10 @@ export class Skill {
   @Length(0, 1000, { message: 'Описание не должно превышать 1000 символов' })
   description: string;
 
-  @ManyToOne(() => Category, { eager: true })
-  @JoinColumn()
-  @IsNotEmpty({ message: 'Категория обязательна' })
-  category: Category;
+  // @ManyToOne(() => Category, { eager: true })
+  // @JoinColumn()
+  // @IsNotEmpty({ message: 'Категория обязательна' })
+  // category: Category;
 
   @Column('simple-array', { nullable: true })
   @IsOptional()
@@ -42,10 +43,12 @@ export class Skill {
   @IsUrl({}, { each: true, message: 'Каждая ссылка должна быть валидным URL' })
   images: string[];
 
-  // @ManyToOne(() => User, (user) => user.skills)  //toDo расскоментировать, когда у skills появится модуль
-  // @JoinColumn()
-  // @IsNotEmpty({ message: 'Владелец навыка обязателен' })
-  // owner: User;
+  @ManyToOne(() => User, (user) => user.skills, {
+    onDelete: 'CASCADE'
+  })
+  @JoinColumn()
+  @IsNotEmpty({ message: 'Владелец навыка обязателен' })
+  owner: User;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
