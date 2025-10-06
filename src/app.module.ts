@@ -13,6 +13,8 @@ import {
   IDbConfig,
   IJwtConfig,
 } from './config';
+import { JwtStrategy } from './auth/strategies/jwt.strategy';
+import { SkillsModule } from './skills/skills.module';
 
 @Module({
   imports: [
@@ -25,7 +27,7 @@ import {
       inject: [dbConfig.KEY],
       useFactory: (configService: IDbConfig) => ({
         ...configService,
-        autoLoadEntities: true
+        autoLoadEntities: true,
       }),
     }),
     JwtModule.registerAsync({
@@ -48,8 +50,9 @@ import {
     }),
     UsersModule,
     AuthModule,
+    SkillsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, JwtStrategy],
 })
-export class AppModule { }
+export class AppModule {}
