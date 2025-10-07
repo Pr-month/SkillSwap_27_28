@@ -1,32 +1,23 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Injectable, NotFoundException, UnauthorizedException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, UnauthorizedException, BadRequestException, Inject } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
+import { async } from "rxjs";
 import { Repository } from "typeorm";
+import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdatePasswordDto } from "./dto/update-password.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
 import { User } from "./entities/user.entity";
 import * as bcryptjs from 'bcrypt';
+import { appConfig, IAppConfig } from "src/config";
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-  ) {}
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
-  }
-    private readonly configService: ConfigService,
-  ) {}
-
-  // create(createUserDto: CreateUserDto) {
-  //   return 'This action adds a new user';
-  // }
+    @Inject(appConfig.KEY)
+    private configService: IAppConfig,
+  ) { }
 
   async findAll() {
     return await this.usersRepository.find();
@@ -35,17 +26,9 @@ export class UsersService {
   async findOne(id: number) {
     return await this.usersRepository.findOneOrFail({
       where: { id },
-      // relations: ['favoriteSkills'],
     });
   }
 
-  async findOne(id: number) : Promise<Omit<User, 'password' | 'refreshToken'>> {
-    const user = await this.usersRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    const { password, refreshToken, ...userWithoutSensitiveData } = user;
-    return userWithoutSensitiveData;
   async findById(id: number): Promise<User> {
     return await this.usersRepository.findOneOrFail({
       where: { id },
@@ -90,7 +73,7 @@ export class UsersService {
 
     // Хешируем новый пароль (используем ту же логику, что и в auth.service)
     const saltRounds =
-      this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+      this.configService.salt
     const hashedPassword = await bcryptjs.hash(
       updatePasswordDto.newPassword,
       saltRounds,

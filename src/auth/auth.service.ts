@@ -18,6 +18,7 @@ import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/users.enums';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { JwtPayload } from './types';
 
 export interface Tokens {
   accessToken: string;
@@ -33,7 +34,7 @@ export class AuthService {
     // private readonly configService: ConfigService,
     @Inject(jwtConfig.KEY) // Инжектим конкретный конфиг по ключу
     private readonly jwtConfig: IJwtConfig,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto): Promise<{
     message: string;
@@ -74,7 +75,7 @@ export class AuthService {
 
       // Генерируем токены
       const tokens = await this._generateTokens({
-        userId: savedUser.id,
+        _id: savedUser.id,
         email: savedUser.email,
         role: savedUser.role,
       });
@@ -108,11 +109,7 @@ export class AuthService {
     }
   }
 
-  private async _generateTokens(payload: {
-    userId: number;
-    email: string;
-    role: UserRole;
-  }): Promise<Tokens> {
+  private async _generateTokens(payload: JwtPayload): Promise<Tokens> {
     // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
     const [accessToken, refreshToken] = await Promise.all([
       // Access token - используем основной JWT модуль
@@ -144,7 +141,7 @@ export class AuthService {
 
     // генерим токены
     const tokens = await this._generateTokens({
-      userId: user.id,
+      _id: user.id,
       email: user.email,
       role: user.role,
     });

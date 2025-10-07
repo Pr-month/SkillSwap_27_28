@@ -1,3 +1,14 @@
+import { Controller, UseGuards, Get, ForbiddenException, HttpStatus, Body, Delete, HttpCode, Param, Patch, Req } from "@nestjs/common";
+import { async } from "rxjs";
+import { Roles } from "src/auth/decorators/roles.decorator";
+import { JwtAuthGuard } from "src/auth/guards/jwt.guard";
+import { RolesGuard } from "src/auth/guards/roles.guard";
+import { UpdatePasswordDto } from "./dto/update-password.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { User } from "./entities/user.entity";
+import { UserRole } from "./users.enums";
+import { UsersService } from "./users.service";
+
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
@@ -5,24 +16,14 @@ export class UsersController {
 
   @Get()
   @Roles(UserRole.ADMIN)
-  findAll() {
   async findAll(): Promise<User[]> {
     return this.usersService.findAll();
   }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  getCurrentUser(@Request() req) {
+  getCurrentUser(@Req() req) {
     return this.usersService.findById(req.user.id);
-  }
-
-  @Get(':id')
-  @Roles(UserRole.USER, UserRole.ADMIN)
-  findOne(@Param('id') id: string, @Req() req) {
-    if (req.user.role === UserRole.USER && req.user.userId !== +id) {
-      throw new ForbiddenException('Вы можете просматривать только свой профиль');
-    }
-    return this.usersService.findOne(+id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -45,7 +46,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async updatePassword(
-    @Request() req,
+    @Req() req,
     @Body() updatePasswordDto: UpdatePasswordDto,
   ) {
     await this.usersService.updatePassword(req.user.id, updatePasswordDto);
