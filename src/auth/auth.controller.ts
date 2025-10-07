@@ -57,4 +57,19 @@ export class AuthController {
   ) {
     return await this.authService.logout(req.user.userId);
   }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Обновление токенов' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        refreshToken: { type: 'string' }
+      }
+    }
+  })
+  async refresh(@Body('refreshToken') refreshToken: string) {
+    return await this.authService.refreshTokens(refreshToken);
+  }
 }
