@@ -10,18 +10,16 @@ import { Repository } from 'typeorm';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { User } from './entities/user.entity';
 import * as bcryptjs from 'bcrypt';
+import { appConfig, IAppConfig } from "src/config";
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-    private readonly configService: ConfigService,
-  ) {}
-
-  // create(createUserDto: CreateUserDto) {
-  //   return 'This action adds a new user';
-  // }
+    @Inject(appConfig.KEY)
+    private configService: IAppConfig,
+  ) { }
 
   async findAll() {
     return await this.usersRepository.find();
@@ -30,7 +28,6 @@ export class UsersService {
   async findOne(id: number) {
     return await this.usersRepository.findOneOrFail({
       where: { id },
-      // relations: ['favoriteSkills'],
     });
   }
 
@@ -78,7 +75,7 @@ export class UsersService {
 
     // Хешируем новый пароль (используем ту же логику, что и в auth.service)
     const saltRounds =
-      this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+      this.configService.salt
     const hashedPassword = await bcryptjs.hash(
       updatePasswordDto.newPassword,
       saltRounds,
@@ -90,9 +87,17 @@ export class UsersService {
     });
   }
 
-  // update(id: number, updateUserDto: UpdateUserDto) {
-  //   return `This action updates a #${id} user`;
-  // }
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<Omit<User, 'password' | 'refreshToken'>> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const updatedUser = this.usersRepository.merge(user, updateUserDto);
+    const savedUser = await this.usersRepository.save(updatedUser);
+    const { password, refreshToken, ...userWithoutSensitiveData } = savedUser;
+
+    return userWithoutSensitiveData;
+  }
 
   remove(id: number) {
     return `This action removes a #${id} user`;

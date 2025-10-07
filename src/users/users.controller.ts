@@ -17,10 +17,12 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 import { AuthRequest } from '../auth/types';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @Roles(UserRole.ADMIN)
   async findAll(): Promise<User[]> {
     return this.usersService.findAll();
   }
@@ -31,7 +33,18 @@ export class UsersController {
     return this.usersService.findById(req.user._id);
   }
 
-  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  updateCurrentUser(@Req() req, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(req.user.userId, updateUserDto);
+  }
+
+
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  //   return this.usersService.update(+id, updateUserDto);
+  // }
+
   async findOne(@Param('id') id: string): Promise<User> {
     return this.usersService.findOne(+id);
   }
@@ -51,6 +64,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
   }

@@ -15,6 +15,7 @@ import { SkillDto, AllSkillsDto } from './dto/skills.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { AuthRequest } from '../auth/types';
 
+
 @Controller('skills')
 export class SkillsController {
   constructor(private readonly skillsService: SkillsService) {}

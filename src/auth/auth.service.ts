@@ -34,7 +34,7 @@ export class AuthService {
     // private readonly configService: ConfigService,
     @Inject(jwtConfig.KEY) // Инжектим конкретный конфиг по ключу
     private readonly jwtConfig: IJwtConfig,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto): Promise<{
     message: string;
