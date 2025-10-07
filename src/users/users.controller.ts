@@ -9,12 +9,17 @@ import {
   HttpCode,
   HttpStatus,
   Body,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { AuthRequest } from '../auth/types';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserRole } from './users.enums';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
