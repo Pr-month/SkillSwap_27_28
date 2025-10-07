@@ -1,3 +1,9 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from './entities/user.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Injectable, NotFoundException, UnauthorizedException, BadRequestException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -11,6 +17,10 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+  ) {}
+  create(createUserDto: CreateUserDto) {
+    return 'This action adds a new user';
+  }
     private readonly configService: ConfigService,
   ) {}
 
@@ -29,6 +39,13 @@ export class UsersService {
     });
   }
 
+  async findOne(id: number) : Promise<Omit<User, 'password' | 'refreshToken'>> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const { password, refreshToken, ...userWithoutSensitiveData } = user;
+    return userWithoutSensitiveData;
   async findById(id: number): Promise<User> {
     return await this.usersRepository.findOneOrFail({
       where: { id },
@@ -85,9 +102,17 @@ export class UsersService {
     });
   }
 
-  // update(id: number, updateUserDto: UpdateUserDto) {
-  //   return `This action updates a #${id} user`;
-  // }
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<Omit<User, 'password' | 'refreshToken'>> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const updatedUser = this.usersRepository.merge(user, updateUserDto);
+    const savedUser = await this.usersRepository.save(updatedUser);
+    const { password, refreshToken, ...userWithoutSensitiveData } = savedUser;
+
+    return userWithoutSensitiveData;
+  }
 
   remove(id: number) {
     return `This action removes a #${id} user`;

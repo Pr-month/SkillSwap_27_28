@@ -14,6 +14,7 @@ import {
   IJwtConfig,
 } from './config';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
+import { FilesModule } from './files/files.module';
 import { SkillsModule } from './skills/skills.module';
 import { RequestsModule } from './requests/requests.module';
 
@@ -51,6 +52,7 @@ import { RequestsModule } from './requests/requests.module';
     }),
     UsersModule,
     AuthModule,
+    FilesModule,
     SkillsModule,
     RequestsModule,
   ],

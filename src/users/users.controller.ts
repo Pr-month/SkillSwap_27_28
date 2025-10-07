@@ -1,25 +1,11 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Delete,
-  UseGuards,
-  Request,
-  Patch,
-  HttpCode,
-  HttpStatus,
-  Body,
-} from '@nestjs/common';
-import { UsersService } from './users.service';
-import { User } from './entities/user.entity';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { UpdatePasswordDto } from './dto/update-password.dto';
-
 @Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
   @Get()
+  @Roles(UserRole.ADMIN)
+  findAll() {
   async findAll(): Promise<User[]> {
     return this.usersService.findAll();
   }
@@ -31,6 +17,26 @@ export class UsersController {
   }
 
   @Get(':id')
+  @Roles(UserRole.USER, UserRole.ADMIN)
+  findOne(@Param('id') id: string, @Req() req) {
+    if (req.user.role === UserRole.USER && req.user.userId !== +id) {
+      throw new ForbiddenException('Вы можете просматривать только свой профиль');
+    }
+    return this.usersService.findOne(+id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  updateCurrentUser(@Req() req, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(req.user.userId, updateUserDto);
+  }
+
+
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  //   return this.usersService.update(+id, updateUserDto);
+  // }
+
   async findOne(@Param('id') id: string): Promise<User> {
     return this.usersService.findOne(+id);
   }
@@ -50,6 +56,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
   }
