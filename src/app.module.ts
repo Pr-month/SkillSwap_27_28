@@ -15,6 +15,7 @@ import {
 } from './config';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
 import { FilesModule } from './files/files.module';
+import { SkillsModule } from './skills/skills.module';
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { FilesModule } from './files/files.module';
       inject: [dbConfig.KEY],
       useFactory: (configService: IDbConfig) => ({
         ...configService,
-        autoLoadEntities: true
+        autoLoadEntities: true,
       }),
     }),
     JwtModule.registerAsync({
@@ -51,8 +52,9 @@ import { FilesModule } from './files/files.module';
     UsersModule,
     AuthModule,
     FilesModule,
+    SkillsModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],
 })
-export class AppModule { }
+export class AppModule {}
