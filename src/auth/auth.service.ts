@@ -18,6 +18,7 @@ import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/users.enums';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { appConfig } from 'src/config/app.config';
 
 export interface Tokens {
   accessToken: string;
@@ -31,8 +32,10 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     // private readonly configService: ConfigService,
-    @Inject(jwtConfig.KEY) // Инжектим конкретный конфиг по ключу
+    @Inject(jwtConfig.KEY)
     private readonly jwtConfig: IJwtConfig,
+    @Inject(appConfig.KEY)
+    private readonly appConfig: { bcryptSaltRounds: number },
   ) {}
 
   async register(registerDto: RegisterDto): Promise<{
@@ -56,7 +59,8 @@ export class AuthService {
       // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
 
       // Хешируем пароль
-      const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
+      // const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
+      const saltRounds = this.appConfig.bcryptSaltRounds;
       const hashedPassword = await bcrypt.hash(
         registerDto.password,
         saltRounds,

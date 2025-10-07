@@ -48,4 +48,25 @@ export class SkillsController {
   async remove(@Param('id') id: number, @Req() req: AuthRequest) {
     return await this.skillsService.remove(id, req.user.id);
   }
+
+  // Добавить навык в избранное
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/favorite')
+  async addToFavorites(@Param('id') id: number, @Req() req: AuthRequest) {
+    return await this.skillsService.addToFavorites(id, req.user.id);
+  }
+
+  // Удалить навык из избранного
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/favorite')
+  async removeFromFavorites(@Param('id') id: number, @Req() req: AuthRequest) {
+    return await this.skillsService.removeFromFavorites(id, req.user.id);
+  }
+
+  // Получить избранные навыки пользователя
+  @UseGuards(JwtAuthGuard)
+  @Get('favorites/my')
+  async getFavorites(@Req() req: AuthRequest) {
+    return await this.skillsService.getFavorites(req.user.id);
+  }
 }

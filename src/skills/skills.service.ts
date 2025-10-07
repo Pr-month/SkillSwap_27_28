@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -74,5 +75,69 @@ export class SkillsService {
     }
     await this.skillsRepository.delete(id);
     return { message: 'Навык удален' };
+  }
+  
+  async addToFavorites(skillId: number, userId: number) {
+    // Находим навык
+    const skill = await this.skillsRepository.findOne({
+      where: { id: skillId },
+      relations: ['owner']
+    });
+    
+    if (!skill) {
+      throw new NotFoundException('Навык не найден');
+    }
+
+    // Находим пользователя с его избранными навыками
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['favoriteSkills']
+    });
+
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    // Проверяем, не добавлен ли уже навык в избранное
+    const isAlreadyFavorite = user.favoriteSkills.some(favSkill => favSkill.id === skillId);
+    if (isAlreadyFavorite) {
+      throw new ConflictException('Навык уже в избранном');
+    }
+
+    // Добавляем навык в избранное
+    user.favoriteSkills.push(skill);
+    await this.userRepository.save(user);
+
+    return { message: 'Навык добавлен в избранное' };
+  }
+
+  async removeFromFavorites(skillId: number, userId: number) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['favoriteSkills']
+    });
+
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    // Фильтруем избранные навыки, удаляя указанный
+    user.favoriteSkills = user.favoriteSkills.filter(favSkill => favSkill.id !== skillId);
+    await this.userRepository.save(user);
+
+    return { message: 'Навык удален из избранного' };
+  }
+
+  async getFavorites(userId: number) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['favoriteSkills', 'favoriteSkills.owner']
+    });
+
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    return user.favoriteSkills;
   }
 }
