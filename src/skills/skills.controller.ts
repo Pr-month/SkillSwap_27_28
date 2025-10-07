@@ -13,7 +13,8 @@ import {
 import { SkillsService } from './skills.service';
 import { SkillDto, AllSkillsDto } from './dto/skills.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { AuthRequest } from 'src/auth/types';
+import { AuthRequest } from '../auth/types';
+
 
 @Controller('skills')
 export class SkillsController {

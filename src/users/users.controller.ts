@@ -1,18 +1,25 @@
-import { Controller, UseGuards, Get, ForbiddenException, HttpStatus, Body, Delete, HttpCode, Param, Patch, Req } from "@nestjs/common";
-import { async } from "rxjs";
-import { Roles } from "src/auth/decorators/roles.decorator";
-import { JwtAuthGuard } from "src/auth/guards/jwt.guard";
-import { RolesGuard } from "src/auth/guards/roles.guard";
-import { UpdatePasswordDto } from "./dto/update-password.dto";
-import { UpdateUserDto } from "./dto/update-user.dto";
-import { User } from "./entities/user.entity";
-import { UserRole } from "./users.enums";
-import { UsersService } from "./users.service";
+import {
+  Controller,
+  Get,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  Patch,
+  HttpCode,
+  HttpStatus,
+  Body,
+} from '@nestjs/common';
+import { UsersService } from './users.service';
+import { User } from './entities/user.entity';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { AuthRequest } from '../auth/types';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Get()
   @Roles(UserRole.ADMIN)
@@ -22,8 +29,8 @@ export class UsersController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  getCurrentUser(@Req() req) {
-    return this.usersService.findById(req.user.id);
+  getCurrentUser(@Request() req: AuthRequest) {
+    return this.usersService.findById(req.user._id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -46,10 +53,10 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async updatePassword(
-    @Req() req,
+    @Request() req: AuthRequest,
     @Body() updatePasswordDto: UpdatePasswordDto,
   ) {
-    await this.usersService.updatePassword(req.user.id, updatePasswordDto);
+    await this.usersService.updatePassword(req.user._id, updatePasswordDto);
     return {
       message: 'Пароль успешно обновлен',
       statusCode: HttpStatus.OK,

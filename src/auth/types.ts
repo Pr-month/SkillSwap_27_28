@@ -6,7 +6,6 @@ export type JwtPayload = {
   role: UserRole;
 };
 
-
 export type AuthRequest = Request & {
-  user: JwtPayload
+  user: JwtPayload;
 };

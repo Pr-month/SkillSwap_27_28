@@ -1,12 +1,14 @@
-import { Injectable, NotFoundException, UnauthorizedException, BadRequestException, Inject } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { InjectRepository } from "@nestjs/typeorm";
-import { async } from "rxjs";
-import { Repository } from "typeorm";
-import { CreateUserDto } from "./dto/create-user.dto";
-import { UpdatePasswordDto } from "./dto/update-password.dto";
-import { UpdateUserDto } from "./dto/update-user.dto";
-import { User } from "./entities/user.entity";
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { User } from './entities/user.entity';
 import * as bcryptjs from 'bcrypt';
 import { appConfig, IAppConfig } from "src/config";
 
