@@ -14,6 +14,7 @@ import {
   IJwtConfig,
 } from './config';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { JwtStrategy } from './auth/strategies/jwt.strategy';
     }),
     UsersModule,
     AuthModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],
