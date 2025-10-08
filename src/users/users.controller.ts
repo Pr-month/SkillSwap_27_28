@@ -1,10 +1,24 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  Patch,
+  HttpCode,
+  HttpStatus,
+  Body,
+  Req,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { User } from './entities/user.entity';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { AuthRequest } from '../auth/types';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from './users.enums';
 
 @Controller('users')
@@ -12,24 +26,16 @@ import { UserRole } from './users.enums';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // @Post()
-  // create(@Body() createUserDto: CreateUserDto) {
-  //   return this.usersService.create(createUserDto);
-  // }
-
   @Get()
   @Roles(UserRole.ADMIN)
-  findAll() {
+  async findAll(): Promise<User[]> {
     return this.usersService.findAll();
   }
 
-  @Get(':id')
-  @Roles(UserRole.USER, UserRole.ADMIN)
-  findOne(@Param('id') id: string, @Req() req) {
-    if (req.user.role === UserRole.USER && req.user.userId !== +id) {
-      throw new ForbiddenException('Вы можете просматривать только свой профиль');
-    }
-    return this.usersService.findOne(+id);
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  getCurrentUser(@Request() req: AuthRequest) {
+    return this.usersService.findById(req.user._id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -43,6 +49,24 @@ export class UsersController {
   // update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
   //   return this.usersService.update(+id, updateUserDto);
   // }
+
+  async findOne(@Param('id') id: string): Promise<User> {
+    return this.usersService.findOne(+id);
+  }
+
+  @Patch('me/password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updatePassword(
+    @Request() req: AuthRequest,
+    @Body() updatePasswordDto: UpdatePasswordDto,
+  ) {
+    await this.usersService.updatePassword(req.user._id, updatePasswordDto);
+    return {
+      message: 'Пароль успешно обновлен',
+      statusCode: HttpStatus.OK,
+    };
+  }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)

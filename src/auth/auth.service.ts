@@ -1,21 +1,24 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
-  UnauthorizedException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 // import { CreateAuthDto } from './dto/create-auth.dto';
 // import { UpdateAuthDto } from './dto/update-auth.dto';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { jwtConfig } from 'src/config/jwt.config';
+import { Repository } from 'typeorm';
+import { IJwtConfig } from '../config/config.types';
 import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/users.enums';
-import { RegisterDto } from './dto/register.dto';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { JwtPayload } from './types';
 
 export interface Tokens {
   accessToken: string;
@@ -28,8 +31,10 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
-  ) {}
+    // private readonly configService: ConfigService,
+    @Inject(jwtConfig.KEY) // Инжектим конкретный конфиг по ключу
+    private readonly jwtConfig: IJwtConfig,
+  ) { }
 
   async register(registerDto: RegisterDto): Promise<{
     message: string;
@@ -48,9 +53,11 @@ export class AuthService {
         );
       }
 
+      // Получаем конфигурацию JWT
+      // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
+
       // Хешируем пароль
-      const saltRounds =
-        this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+      const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
       const hashedPassword = await bcrypt.hash(
         registerDto.password,
         saltRounds,
@@ -68,7 +75,7 @@ export class AuthService {
 
       // Генерируем токены
       const tokens = await this._generateTokens({
-        userId: savedUser.id,
+        _id: savedUser.id,
         email: savedUser.email,
         role: savedUser.role,
       });
@@ -102,18 +109,15 @@ export class AuthService {
     }
   }
 
-  private async _generateTokens(payload: {
-    userId: number;
-    email: string;
-    role: UserRole;
-  }): Promise<Tokens> {
+  private async _generateTokens(payload: JwtPayload): Promise<Tokens> {
+    // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
     const [accessToken, refreshToken] = await Promise.all([
       // Access token - используем основной JWT модуль
       this.jwtService.signAsync(payload),
       // Refresh token - генерируем с отдельным секретом
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN') || '604800',
+        secret: this.jwtConfig.jwtRefreshSecret,
+        expiresIn: this.jwtConfig.jwtRefreshExpiresIn,
       }),
     ]);
 
@@ -137,7 +141,7 @@ export class AuthService {
 
     // генерим токены
     const tokens = await this._generateTokens({
-      userId: user.id,
+      _id: user.id,
       email: user.email,
       role: user.role,
     });
