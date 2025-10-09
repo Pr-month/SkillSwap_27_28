@@ -1,7 +1,6 @@
 import { registerAs } from '@nestjs/config';
 import { DataSourceOptions } from 'typeorm';
 import * as dotenv from 'dotenv';
-import { Category } from '../categories/entities/category.entity';
 
 dotenv.config();
 
@@ -15,7 +14,7 @@ export const dbConfig = registerAs(
     password: process.env.DB_PASSWORD || 'postgres',
     database: process.env.DB_DATABASE || 'skillswap',
     synchronize: process.env.NODE_ENV !== 'production',
-    entities: [__dirname + '/**/*.entity{.ts,.js}', Category], // Отдельно прописан entity для сида
+    entities: [__dirname + '/../**/*.entity.{ts,js}'],
     logging: process.env.NODE_ENV !== 'test',
   }),
 );

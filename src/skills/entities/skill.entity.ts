@@ -12,8 +12,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Category } from '../../categories/entities/category.entity';
-import { User } from 'src/users/entities/user.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity()
 export class Skill {
@@ -44,7 +43,7 @@ export class Skill {
   images: string[];
 
   @ManyToOne(() => User, (user) => user.skills, {
-    onDelete: 'CASCADE'
+    onDelete: 'CASCADE',
   })
   @JoinColumn()
   @IsNotEmpty({ message: 'Владелец навыка обязателен' })

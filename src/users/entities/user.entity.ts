@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Gender, UserRole } from '../users.enums';
-import { Skill } from 'src/skills/entities/skill.entity';
+import { Skill } from '../../skills/entities/skill.entity';
 
 @Entity()
 export class User {
@@ -53,7 +53,7 @@ export class User {
   @Column({ nullable: true })
   avatar: string;
 
-  @OneToMany(() => Skill, (skill) => skill.owner) 
+  @OneToMany(() => Skill, (skill) => skill.owner)
   skills: Skill[];
 
   // @ManyToMany(() => Category)
