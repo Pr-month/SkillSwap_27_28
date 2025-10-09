@@ -16,6 +16,7 @@ import {
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
 import { FilesModule } from './files/files.module';
 import { SkillsModule } from './skills/skills.module';
+import { CategoriesModule } from './categories/categories.module';
 import { RequestsModule } from './requests/requests.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -59,6 +60,7 @@ import { join } from 'path';
     AuthModule,
     FilesModule,
     SkillsModule,
+    CategoriesModule,
     RequestsModule,
   ],
   controllers: [AppController],
