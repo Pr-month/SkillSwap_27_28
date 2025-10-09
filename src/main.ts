@@ -4,6 +4,7 @@ import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IAppConfig } from './config';
 import { AllExpectionFilter } from './common/all-exception.filter';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
