@@ -19,6 +19,7 @@ import { UserRole } from '../users/users.enums';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './types';
+import { ConfigService } from '@nestjs/config';
 
 export interface Tokens {
   accessToken: string;
@@ -31,7 +32,7 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
-    // private readonly configService: ConfigService,
+    private readonly configService: ConfigService,
     @Inject(jwtConfig.KEY) // Инжектим конкретный конфиг по ключу
     private readonly jwtConfig: IJwtConfig,
   ) { }
@@ -204,7 +205,7 @@ export class AuthService {
 
     // Генерируем новые токены
     const tokens = await this._generateTokens({
-      userId:user.id,
+      _id:user.id,
       email: user.email,
       role: user.role,
     });
