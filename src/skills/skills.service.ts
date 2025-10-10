@@ -16,7 +16,7 @@ export class SkillsService {
     private readonly skillsRepository: Repository<Skill>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) { }
+  ) {}
   async findAll(dto: AllSkillsDto) {
     const { page = 1, limit = 20, search = '', category } = dto;
     const skip = (page - 1) * limit;
@@ -48,7 +48,9 @@ export class SkillsService {
   }
 
   async create(dto: SkillDto, ownerId: number) {
-    const owner = await this.userRepository.findOneOrFail({ where: { id: ownerId } })
+    const owner = await this.userRepository.findOneOrFail({
+      where: { id: ownerId },
+    });
     const skill = this.skillsRepository.create({
       ...dto,
       owner,

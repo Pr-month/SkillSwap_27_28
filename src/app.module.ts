@@ -14,12 +14,18 @@ import {
   IJwtConfig,
 } from './config';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
+import { FilesModule } from './files/files.module';
 import { SkillsModule } from './skills/skills.module';
 import { CategoriesModule } from './categories/categories.module';
 import { RequestsModule } from './requests/requests.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, dbConfig, jwtConfig],
@@ -52,6 +58,7 @@ import { RequestsModule } from './requests/requests.module';
     }),
     UsersModule,
     AuthModule,
+    FilesModule,
     SkillsModule,
     CategoriesModule,
     RequestsModule,
@@ -59,4 +66,4 @@ import { RequestsModule } from './requests/requests.module';
   controllers: [AppController],
   providers: [AppService, JwtStrategy],
 })
-export class AppModule {}
+export class AppModule { }
