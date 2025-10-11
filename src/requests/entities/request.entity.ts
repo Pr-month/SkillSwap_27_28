@@ -1,26 +1,26 @@
 import {
   Column,
-  CreateDateColumn,
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
+  CreateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Skill } from '../../skills/entities/skill.entity';
 import { RequestStatus } from '../requests.enums';
+import { Skill } from '../../skills/entities/skill.entity';
 
-@Entity()
+@Entity('requests')
 export class Request {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @CreateDateColumn()
   createdAt: Date;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User)
   sender: User;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User)
   receiver: User;
 
   @Column({
@@ -30,12 +30,12 @@ export class Request {
   })
   status: RequestStatus;
 
-  @ManyToOne(() => Skill, { eager: true })
+  @ManyToOne(() => Skill)
   offeredSkill: Skill;
 
-  @ManyToOne(() => Skill, { eager: true })
+  @ManyToOne(() => Skill)
   requestedSkill: Skill;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isRead: boolean;
 }

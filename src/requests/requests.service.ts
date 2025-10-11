@@ -9,6 +9,8 @@ import { Request } from './entities/request.entity';
 import { Skill } from '../skills/entities/skill.entity';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RequestStatus } from './requests.enums';
+import { UpdateRequestDto } from './dto/update-request.dto';
+import { UserRole } from '../users/users.enums';
 
 @Injectable()
 export class RequestsService {
@@ -63,6 +65,7 @@ export class RequestsService {
         receiver: { id: userId },
         status: In([RequestStatus.PENDING, RequestStatus.IN_PROGRESS]),
       },
+      relations: ['sender', 'receiver', 'offeredSkill', 'requestedSkill'],
       order: {
         createdAt: 'DESC',
       },
@@ -77,11 +80,61 @@ export class RequestsService {
         sender: { id: userId },
         status: In([RequestStatus.PENDING, RequestStatus.IN_PROGRESS]),
       },
+      relations: ['sender', 'receiver', 'offeredSkill', 'requestedSkill'],
       order: {
         createdAt: 'DESC',
       },
     });
 
     return requests;
+  }
+
+  async update(
+    id: string,
+    dto: UpdateRequestDto,
+    userId: number,
+    userRole: UserRole,
+  ) {
+    const request = await this.requestRepository.findOne({
+      where: { id },
+      relations: ['receiver'],
+    });
+
+    if (!request) {
+      throw new NotFoundException('Заявка не найдена');
+    }
+
+    if (request.receiver.id !== userId && userRole !== UserRole.ADMIN) {
+      throw new ForbiddenException(
+        'Вы можете обновлять только входящие заявки',
+      );
+    }
+
+    if (dto.status !== undefined) {
+      request.status = dto.status;
+    }
+    if (dto.isRead !== undefined) {
+      request.isRead = dto.isRead;
+    }
+
+    return await this.requestRepository.save(request);
+  }
+
+  async remove(id: string, userId: number, userRole: UserRole) {
+    const request = await this.requestRepository.findOne({
+      where: { id },
+      relations: ['sender'],
+    });
+
+    if (!request) {
+      throw new NotFoundException('Заявка не найдена');
+    }
+
+    if (request.sender.id !== userId && userRole !== UserRole.ADMIN) {
+      throw new ForbiddenException('Вы можете удалять только свои заявки');
+    }
+
+    await this.requestRepository.delete(id);
+    return { message: 'Заявка удалена' };
   }
 }
