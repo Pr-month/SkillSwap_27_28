@@ -19,6 +19,7 @@ import { UserRole } from '../users/users.enums';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './types';
+import { ConfigService } from '@nestjs/config';
 
 export interface Tokens {
   accessToken: string;
@@ -31,7 +32,7 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
-    // private readonly configService: ConfigService,
+    private readonly configService: ConfigService,
     @Inject(jwtConfig.KEY) // Инжектим конкретный конфиг по ключу
     private readonly jwtConfig: IJwtConfig,
   ) { }
@@ -172,55 +173,35 @@ export class AuthService {
     return { message: 'Выход выполнен' };
   }
 
-  async refreshTokens(refreshToken: string) {
-    if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token не предоставлен');
-    }
-
-    // Валидируем refresh token
-    let payload: any;
-    try {
-      payload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: this.configService.get('JWT_REFRESH_SECRET'),
-      });
-    } catch {
-      throw new UnauthorizedException('Невалидный refresh token');
-    }
-
+  async refreshTokens(userId: number) {
     // Находим пользователя
     const user = await this.userRepository.findOne({
-      where: { id: payload.userId }
+      where: { id: userId }
     });
 
-    if (!user || !user.refreshToken) {
+    if (!user) {
       throw new UnauthorizedException('Пользователь не найден');
-    }
-
-    // Проверяем, что refresh token совпадает с сохраненным в БД
-    const isRefreshTokenValid = await bcrypt.compare(refreshToken, user.refreshToken);
-    if (!isRefreshTokenValid) {
-      throw new UnauthorizedException('Refresh token недействителен');
     }
 
     // Генерируем новые токены
     const tokens = await this._generateTokens({
-      userId:user.id,
+      _id: user.id,
       email: user.email,
       role: user.role,
     });
 
     // Сохраняем новый refresh token в БД
-     const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
-     const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, saltRounds);
+    const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+    const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, saltRounds);
 
-     await this.userRepository.update(user.id, {
-      refreshToken: hashedRefreshToken,
-    });
-    
-    return {
-      message: 'Токены обновлены',
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-  };
+    await this.userRepository.update(user.id, {
+    refreshToken: hashedRefreshToken,
+  });
+
+  return {
+    message: 'Токены обновлены',
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+  }
   }
 }
