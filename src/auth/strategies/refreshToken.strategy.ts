@@ -1,23 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtPayload } from '../types';
+import { IJwtConfig, jwtConfig } from 'src/config';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
   Strategy,
   'refresh-jwt',
 ) {
-  constructor() {
-    const secret = process.env.JWT_REFRESH_SECRET || 'test';
-    if (!secret) {
-      throw new Error('JWT_REFRESH_SECRET is not defined');
-    }
-
+  constructor(
+    @Inject(jwtConfig.KEY)
+    private readonly configService: IJwtConfig,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: secret,
       ignoreExpiration: false,
+      secretOrKey: configService.jwtRefreshSecret,
     });
   }
 

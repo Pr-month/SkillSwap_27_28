@@ -76,7 +76,7 @@ export class UsersService {
 
     // Хешируем новый пароль (используем ту же логику, что и в auth.service)
     const saltRounds =
-      this.configService.salt
+      this.configService.bcryptSaltRounds
     const hashedPassword = await bcryptjs.hash(
       updatePasswordDto.newPassword,
       saltRounds,
