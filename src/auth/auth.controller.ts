@@ -47,4 +47,22 @@ export class AuthController {
   ) {
     return await this.authService.logout(req.user.userId);
   }
+
+  @UseGuards(RefreshTokenGuard)
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Обновление токенов' })
+  @ApiResponse({
+    status: 200,
+    description: 'Токены успешно обновлены',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Невалидный refresh token',
+  })
+  async refresh(
+    @Req() req: Request & { user: { userId: number; email: string } },
+  ) {
+    return await this.authService.refreshTokens(req.user.userId);
+  }
 }
