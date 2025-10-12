@@ -19,6 +19,7 @@ import { SkillsModule } from './skills/skills.module';
 import { RequestsModule } from './requests/requests.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { join } from 'path';
     FilesModule,
     SkillsModule,
     RequestsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],
