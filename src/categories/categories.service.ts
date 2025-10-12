@@ -18,7 +18,7 @@ export class CategoriesService {
   }
 
   async create(dto: CategoryDto) {
-    const name = dto.name.trim();
+    const name = String(dto.name).trim();
     let parent: Category | null = null;
     if (dto.parentId !== undefined && dto.parentId !== null) {
       parent = await this.categoriesRepository.findOne({
@@ -36,7 +36,7 @@ export class CategoriesService {
     });
     if (!category) throw new NotFoundException('Категория не найдена');
     if (dto.name !== undefined) {
-      category.name = dto.name.trim();
+      category.name = String(dto.name).trim();
     }
 
     if (dto.parentId !== undefined) {

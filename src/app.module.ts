@@ -20,7 +20,6 @@ import { CategoriesModule } from './categories/categories.module';
 import { RequestsModule } from './requests/requests.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
