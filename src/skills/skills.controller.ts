@@ -13,8 +13,8 @@ import {
 import { SkillsService } from './skills.service';
 import { SkillDto, AllSkillsDto } from './dto/skills.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+import { AuthRequest } from '../auth/types';
 
-type AuthRequest = Request & { user: { id: number } };
 
 @Controller('skills')
 export class SkillsController {
@@ -29,7 +29,7 @@ export class SkillsController {
   @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Body() dto: SkillDto, @Req() req: AuthRequest) {
-    return await this.skillsService.create(dto, req.user.id);
+    return await this.skillsService.create(dto, req.user._id);
   }
 
   //обновление навыка
@@ -40,13 +40,13 @@ export class SkillsController {
     @Body() dto: SkillDto,
     @Req() req: AuthRequest,
   ) {
-    return await this.skillsService.update(id, dto, req.user.id);
+    return await this.skillsService.update(id, dto, req.user._id);
   }
   //удаление навыка
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async remove(@Param('id') id: number, @Req() req: AuthRequest) {
-    return await this.skillsService.remove(id, req.user.id);
+    return await this.skillsService.remove(id, req.user._id);
   }
 
   // Добавить навык в избранное
