@@ -18,6 +18,9 @@ import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/users.enums';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { appConfig } from 'src/config/app.config';
+import { JwtPayload } from './types';
+import { ConfigService } from '@nestjs/config';
 
 export interface Tokens {
   accessToken: string;
@@ -30,9 +33,11 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
-    // private readonly configService: ConfigService,
+    private readonly configService: ConfigService,
     @Inject(jwtConfig.KEY) // Инжектим конкретный конфиг по ключу
     private readonly jwtConfig: IJwtConfig,
+    @Inject(appConfig.KEY)
+    private readonly appConfig: { bcryptSaltRounds: number },
   ) {}
 
   async register(registerDto: RegisterDto): Promise<{
@@ -56,7 +61,8 @@ export class AuthService {
       // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
 
       // Хешируем пароль
-      const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
+      // const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
+      const saltRounds = this.appConfig.bcryptSaltRounds;
       const hashedPassword = await bcrypt.hash(
         registerDto.password,
         saltRounds,
@@ -74,7 +80,7 @@ export class AuthService {
 
       // Генерируем токены
       const tokens = await this._generateTokens({
-        userId: savedUser.id,
+        _id: savedUser.id,
         email: savedUser.email,
         role: savedUser.role,
       });
@@ -108,11 +114,7 @@ export class AuthService {
     }
   }
 
-  private async _generateTokens(payload: {
-    userId: number;
-    email: string;
-    role: UserRole;
-  }): Promise<Tokens> {
+  private async _generateTokens(payload: JwtPayload): Promise<Tokens> {
     // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
     const [accessToken, refreshToken] = await Promise.all([
       // Access token - используем основной JWT модуль
@@ -144,7 +146,7 @@ export class AuthService {
 
     // генерим токены
     const tokens = await this._generateTokens({
-      userId: user.id,
+      _id: user.id,
       email: user.email,
       role: user.role,
     });
@@ -173,5 +175,37 @@ export class AuthService {
     // Удаляем refresh токен из БД
     await this.userRepository.update(userId, { refreshToken: '' });
     return { message: 'Выход выполнен' };
+  }
+
+  async refreshTokens(userId: number) {
+    // Находим пользователя
+    const user = await this.userRepository.findOne({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Пользователь не найден');
+    }
+
+    // Генерируем новые токены
+    const tokens = await this._generateTokens({
+      _id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    // Сохраняем новый refresh token в БД
+    const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+    const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, saltRounds);
+
+    await this.userRepository.update(user.id, {
+    refreshToken: hashedRefreshToken,
+  });
+
+  return {
+    message: 'Токены обновлены',
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+  }
   }
 }
