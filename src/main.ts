@@ -4,7 +4,8 @@ import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IAppConfig } from './config';
 import { AllExpectionFilter } from './common/all-exception.filter';
-import { join } from 'path';
+// import { join } from 'path';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,6 +19,13 @@ async function bootstrap() {
     // Проверка наличия конфига
     throw new Error('App конфиг не найден');
   }
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('SkillSwap_27-28')
+    .setDescription('Документирование API проекта SkillSwap_27-28')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, document);
 
   await app.listen(appConfigData?.port); // Используем порт из конфига
 }
