@@ -62,6 +62,7 @@ import { join } from 'path';
     SkillsModule,
     CategoriesModule,
     RequestsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],
