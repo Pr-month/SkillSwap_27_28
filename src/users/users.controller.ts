@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Body,
   Req,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
@@ -28,8 +29,17 @@ export class UsersController {
 
   @Get()
   @Roles(UserRole.ADMIN)
-  async findAll(): Promise<User[]> {
-    return this.usersService.findAll();
+  // async findAll(): Promise<User[]> {
+  //   return this.usersService.findAll();
+  // }
+  async findAll(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.usersService.findAll({
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @Get('me')
