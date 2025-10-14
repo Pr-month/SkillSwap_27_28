@@ -11,6 +11,7 @@ import { CreateRequestDto } from './dto/create-request.dto';
 import { RequestStatus } from './requests.enums';
 import { UpdateRequestDto } from './dto/update-request.dto';
 import { UserRole } from '../users/users.enums';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
 export class RequestsService {
@@ -19,6 +20,7 @@ export class RequestsService {
     private readonly requestRepository: Repository<Request>,
     @InjectRepository(Skill)
     private readonly skillRepository: Repository<Skill>,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
   async create(dto: CreateRequestDto, senderId: number) {
@@ -56,7 +58,22 @@ export class RequestsService {
       isRead: false,
     });
 
-    return await this.requestRepository.save(request);
+    // return await this.requestRepository.save(request);
+    const savedRequest = await this.requestRepository.save(request);
+
+    // Отправка уведомления получателю о новой заявке
+    this.notificationsGateway.notifyNewRequest(
+      receiver.id,
+      `Поступила новая заявка от ${sender.name}`,
+      {
+        type: 'NEW_REQUEST',
+        skillName: requestedSkill.title,
+        fromUser: sender.name,
+        requestId: savedRequest.id,
+      }
+    );
+
+    return savedRequest;
   }
 
   async getIncoming(userId: number) {
@@ -110,6 +127,8 @@ export class RequestsService {
       );
     }
 
+    const previousStatus = request.status;
+
     if (dto.status !== undefined) {
       request.status = dto.status;
     }
@@ -117,7 +136,30 @@ export class RequestsService {
       request.isRead = dto.isRead;
     }
 
-    return await this.requestRepository.save(request);
+    // return await this.requestRepository.save(request);
+    const updatedRequest = await this.requestRepository.save(request);
+
+    // Отправка уведомлений при изменении статуса
+    if (dto.status !== undefined && dto.status !== previousStatus) {
+      const senderName = request.receiver.name; // Исправлено с username на name
+      
+      if (dto.status === RequestStatus.REJECTED) {
+        // Уведомление отправителю об отклонении
+        this.notificationsGateway.notifyRequestRejected(
+          request.sender.id,
+          request.requestedSkill.title, // Исправлено с name на title
+          senderName
+        );
+      } else if (dto.status === RequestStatus.ACCEPTED) {
+        // Уведомление отправителю о принятии
+        this.notificationsGateway.notifyRequestAccepted(
+          request.sender.id,
+          request.requestedSkill.title, // Исправлено с name на title
+          senderName
+        );
+      }
+    }
+    return updatedRequest;
   }
 
   async remove(id: string, userId: number, userRole: UserRole) {
