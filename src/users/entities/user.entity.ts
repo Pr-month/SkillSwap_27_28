@@ -7,9 +7,17 @@ import {
   IsOptional,
   Length,
 } from 'class-validator';
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Gender, UserRole } from '../users.enums';
 import { Skill } from '../../skills/entities/skill.entity';
+import { Category } from '../../categories/entities/category.entity';
 
 @Entity()
 export class User {
@@ -56,9 +64,9 @@ export class User {
   @OneToMany(() => Skill, (skill) => skill.owner)
   skills: Skill[];
 
-  // @ManyToMany(() => Category)
-  // @JoinTable()
-  // wantToLearn: Category[];
+  @ManyToMany(() => Category, { eager: true })
+  @JoinTable()
+  wantToLearn: Category[];
 
   @ManyToMany(() => Skill)
   @JoinTable()
