@@ -7,20 +7,24 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcryptjs from 'bcrypt';
-import { appConfig, IAppConfig } from "src/config";
-import { Repository } from 'typeorm';
+import { appConfig, IAppConfig } from 'src/config';
+import { In, Repository } from 'typeorm';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { Skill } from 'src/skills/entities/skill.entity';
+import { Category } from 'src/categories/entities/category.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Skill)
+    private skillsRepository: Repository<Skill>,
     @Inject(appConfig.KEY)
     private configService: IAppConfig,
-  ) { }
+  ) {}
 
   async findAll() {
     return await this.usersRepository.find();
@@ -75,8 +79,7 @@ export class UsersService {
     }
 
     // Хешируем новый пароль (используем ту же логику, что и в auth.service)
-    const saltRounds =
-      this.configService.bcryptSaltRounds
+    const saltRounds = this.configService.bcryptSaltRounds;
     const hashedPassword = await bcryptjs.hash(
       updatePasswordDto.newPassword,
       saltRounds,
@@ -88,7 +91,10 @@ export class UsersService {
     });
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<Omit<User, 'password' | 'refreshToken'>> {
+  async update(
+    id: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<Omit<User, 'password' | 'refreshToken'>> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -102,5 +108,34 @@ export class UsersService {
 
   remove(id: number) {
     return `This action removes a #${id} user`;
+  }
+
+  async findBySkill(skillId: number): Promise<User[]> {
+    const skill = await this.skillsRepository.findOne({
+      where: { id: skillId },
+      relations: ['owner', 'owner.wantToLearn'],
+    });
+    if (!skill) {
+      throw new NotFoundException('Навык не найден');
+    }
+    if (!skill.owner) {
+      throw new NotFoundException('Навык существует, но у него нет владельца');
+    }
+    const wantToLearnIds: number[] = skill.owner.wantToLearn.map(
+      (cat: Category) => cat.id,
+    );
+    if (!wantToLearnIds) {
+      return [];
+    }
+    const findedUsers = await this.usersRepository.find({
+      where: {
+        wantToLearn: {
+          id: In(wantToLearnIds),
+        },
+      },
+      relations: ['wantToLearn'],
+      take: 10,
+    });
+    return findedUsers;
   }
 }
