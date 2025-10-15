@@ -8,7 +8,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenGuard } from './guards/refreshToken.guard';
@@ -39,11 +45,17 @@ export class AuthController {
   }
 
   @Post('login')
+  @ApiOperation({ summary: 'Логин' })
+  @ApiResponse({ status: 200, description: 'Успешный логин' })
+  @ApiUnauthorizedResponse({ description: 'Авторизация не пройдена' })
   async login(@Body() dto: LoginDto) {
     return await this.authService.login(dto);
   }
 
   @Post('logout')
+  @ApiOperation({ summary: 'Логаут' })
+  @ApiResponse({ status: 200, description: 'Успешный логаут' })
+  @ApiUnauthorizedResponse({ description: 'Невалидный refresh token' })
   async logout(
     @Req() req: Request & { user: { userId: number; roles?: string[] } },
   ) {
