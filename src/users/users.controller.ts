@@ -44,7 +44,6 @@ export class UsersController {
     return this.usersService.update(req.user.userId, updateUserDto);
   }
 
-
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
   //   return this.usersService.update(+id, updateUserDto);
@@ -72,5 +71,10 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
+  }
+
+  @Get('by-skill/:id')
+  async findBySkill(@Param('id') skillId: string): Promise<User[]> {
+    return this.usersService.findBySkill(+skillId);
   }
 }
