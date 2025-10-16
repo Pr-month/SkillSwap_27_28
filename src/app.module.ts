@@ -21,7 +21,8 @@ import { RequestsModule } from './requests/requests.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { NotificationsGateway } from './notifications/notifications.gateway';
-import { WsJwtGuard } from './auth/guards/ws-jwt.guard';
+import { WsJwtGuard } from './notifications/guards/ws-jwt.guard';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { WsJwtGuard } from './auth/guards/ws-jwt.guard';
     CategoriesModule,
     RequestsModule,
     CategoriesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

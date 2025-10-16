@@ -1,13 +1,13 @@
 import {
   WebSocketGateway,
   WebSocketServer,
-  SubscribeMessage,
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger, UseGuards } from '@nestjs/common';
-import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
+import { Server } from 'socket.io';
+import { Logger } from '@nestjs/common';
+import { WsJwtGuard } from './guards/ws-jwt.guard';
+import { SocketWithUser } from './types';
 
 @WebSocketGateway({
   namespace: '/notifications',
@@ -15,27 +15,29 @@ import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
     origin: '*',
   },
 })
-@UseGuards(WsJwtGuard)
 export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  constructor(private readonly wsJwtGuard: WsJwtGuard) {}
+
   @WebSocketServer()
   server: Server;
 
   private logger: Logger = new Logger('NotificationsGateway');
 
   // Обработка подключения
-  async handleConnection(client: Socket) {
+  async handleConnection(client: SocketWithUser) {
     try {
-      // user добавляется в WsJwtGuard
-      const userId = client.data.user.id;
+      this.wsJwtGuard.verifyToken(client);
+      const userId = client.data.user._id;
+      
       client.join(userId.toString());
       this.logger.log(`Client connected: ${client.id}, User ID: ${userId}`);
     } catch (error) {
-      this.logger.error('Connection failed:', error);
+      this.logger.error('Connection failed:', error.message);
       client.disconnect();
     }
   }
 
-  handleDisconnect(client: Socket) {
+  handleDisconnect(client: SocketWithUser) {
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
@@ -86,10 +88,4 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       timestamp: new Date(),
     });
   }
-
-  // Старый метод для обратной совместимости
-  // @SubscribeMessage('message')
-  // handleMessage(client: any, payload: any): string {
-  //   return 'Hello world!';
-  // }
 }
