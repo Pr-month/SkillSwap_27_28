@@ -8,6 +8,7 @@ import {
   IsOptional,
 } from 'class-validator';
 import { Gender } from '../users.enums';
+import { Category } from '../../categories/entities/category.entity';
 export class CreateUserDto {
   @IsNotEmpty({ message: 'Имя обязательно' })
   @IsString()
@@ -30,10 +31,9 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'Пол обязателен' })
   @IsEnum(Gender)
   gender: Gender;
-  @IsNotEmpty({ message: 'Аватар обязателен' })
   @IsString()
-  avatar: string;
+  avatar?: string;
   @IsArray()
   @IsOptional()
-  wantToLearn?: string[];
+  wantToLearn?: Category[];
 }
