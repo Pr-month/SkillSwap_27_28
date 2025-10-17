@@ -7,6 +7,6 @@ export const jwtConfig = registerAs('JWT_CONFIG', () => ({
 
   // Refresh Token настройки
   jwtRefreshSecret:
-    process.env.JWT_REFRESH_SECRET || 'your_jwt_refresh_secret_key',
+  process.env.JWT_REFRESH_SECRET || 'your_jwt_refresh_secret_key',
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '604800s', // 7 дней в секундах
 }));

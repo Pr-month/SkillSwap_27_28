@@ -15,6 +15,23 @@ import { User } from './entities/user.entity';
 import { Skill } from 'src/skills/entities/skill.entity';
 import { Category } from 'src/categories/entities/category.entity';
 
+export interface PaginationOptions {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  meta: {
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -26,8 +43,42 @@ export class UsersService {
     private configService: IAppConfig,
   ) {}
 
-  async findAll() {
-    return await this.usersRepository.find();
+  // async findAll() {
+  //   return await this.usersRepository.find();
+  // }
+
+  async findAll(options?: PaginationOptions): Promise<PaginatedResult<User>> {
+    const page = options?.page || 1;
+    const limit = options?.limit || 10;
+    
+    // Проверка валидности параметров
+    if (page < 1 || limit < 1) {
+      throw new BadRequestException('Page and limit must be positive numbers');
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [data, totalItems] = await this.usersRepository.findAndCount({
+      skip,
+      take: limit,
+      order: { id: 'ASC' },
+    });
+
+    const totalPages = Math.ceil(totalItems / limit);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
+    return {
+      data,
+      meta: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+      },
+    };
   }
 
   async findOne(id: number) {
@@ -46,17 +97,15 @@ export class UsersService {
     userId: number,
     updatePasswordDto: UpdatePasswordDto,
   ): Promise<void> {
-    // Находим пользователя с паролем для проверки
     const user = await this.usersRepository.findOne({
       where: { id: userId },
-      select: ['id', 'password', 'email'], // получаем пароль для проверки
+      select: ['id', 'password', 'email'],
     });
 
     if (!user) {
       throw new NotFoundException('Пользователь не найден');
     }
 
-    // Проверяем текущий пароль (используем тот же подход, что и в auth.service)
     const isCurrentPasswordValid = await bcryptjs.compare(
       updatePasswordDto.currentPassword,
       user.password,

@@ -1,4 +1,3 @@
-// import { Category } from '../../categories/entities/category.entity';
 import { Exclude } from 'class-transformer';
 import {
   // MinLength,
@@ -64,7 +63,7 @@ export class User {
   @OneToMany(() => Skill, (skill) => skill.owner)
   skills: Skill[];
 
-  @ManyToMany(() => Category, { eager: true })
+  @ManyToMany(() => Category)
   @JoinTable()
   wantToLearn: Category[];
 
