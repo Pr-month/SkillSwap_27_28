@@ -10,22 +10,22 @@ import { JwtPayload } from '../../auth/types';
 export class WsJwtGuard {
   constructor(
     private jwtService: JwtService,
-    @Inject(jwtConfig.KEY) 
-    private config: IJwtConfig 
+    @Inject(jwtConfig.KEY)
+    private config: IJwtConfig,
   ) {}
 
   verifyToken(client: SocketWithUser): void {
     const token = client.handshake.query?.token;
-    
+
     if (!token || typeof token !== 'string') {
       throw new WsException('Token not provided');
     }
 
-   try {
+    try {
       const payload = this.jwtService.verify<JwtPayload>(token, {
         secret: this.config.jwtSecret,
       });
-      
+
       client.data.user = payload;
     } catch (error) {
       if (error.name === 'TokenExpiredError') {

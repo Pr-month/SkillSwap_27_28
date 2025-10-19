@@ -110,7 +110,9 @@ describe('AuthService', () => {
     };
 
     beforeEach(() => {
-      jest.spyOn(bcrypt, 'hash').mockImplementation(() => Promise.resolve('hashedPassword'));
+      jest
+        .spyOn(bcrypt, 'hash')
+        .mockImplementation(() => Promise.resolve('hashedPassword'));
     });
 
     it('should successfully register a new user', async () => {
@@ -135,7 +137,10 @@ describe('AuthService', () => {
         role: UserRole.USER,
       });
       expect(mockUserRepository.save).toHaveBeenCalledWith(mockUser);
-      expect(bcrypt.hash).toHaveBeenCalledWith(registerDto.password, mockAppConfig.bcryptSaltRounds);
+      expect(bcrypt.hash).toHaveBeenCalledWith(
+        registerDto.password,
+        mockAppConfig.bcryptSaltRounds,
+      );
       expect(result.message).toBe('Пользователь успешно зарегистрирован');
       expect(result.user.email).toBe(registerDto.email);
       expect(result.user.name).toBe(registerDto.name);
@@ -150,7 +155,9 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
 
       // Act & Assert
-      await expect(authService.register(registerDto)).rejects.toThrow(ConflictException);
+      await expect(authService.register(registerDto)).rejects.toThrow(
+        ConflictException,
+      );
       await expect(authService.register(registerDto)).rejects.toThrow(
         'Пользователь с таким email уже существует',
       );
@@ -162,7 +169,9 @@ describe('AuthService', () => {
       mockUserRepository.save.mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(authService.register(registerDto)).rejects.toThrow(InternalServerErrorException);
+      await expect(authService.register(registerDto)).rejects.toThrow(
+        InternalServerErrorException,
+      );
       await expect(authService.register(registerDto)).rejects.toThrow(
         'Ошибка при регистрации пользователя',
       );
@@ -229,7 +238,9 @@ describe('AuthService', () => {
     };
 
     beforeEach(() => {
-      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(true));
+      jest
+        .spyOn(bcrypt, 'compare')
+        .mockImplementation(() => Promise.resolve(true));
       mockJwtService.signAsync
         .mockResolvedValueOnce('access-token')
         .mockResolvedValueOnce('refresh-token');
@@ -246,7 +257,10 @@ describe('AuthService', () => {
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
         where: { email: loginDto.email },
       });
-      expect(bcrypt.compare).toHaveBeenCalledWith(loginDto.password, mockUser.password);
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        loginDto.password,
+        mockUser.password,
+      );
       expect(result.message).toBe('Вход выполнен');
       expect(result.user.email).toBe(loginDto.email);
       expect(result.accessToken).toBe('access-token');
@@ -260,18 +274,28 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(authService.login(loginDto)).rejects.toThrow(UnauthorizedException);
-      await expect(authService.login(loginDto)).rejects.toThrow('Неверный email или пароль');
+      await expect(authService.login(loginDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(authService.login(loginDto)).rejects.toThrow(
+        'Неверный email или пароль',
+      );
     });
 
     it('should throw UnauthorizedException if password is invalid', async () => {
       // Arrange
       mockUserRepository.findOne.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false));
+      jest
+        .spyOn(bcrypt, 'compare')
+        .mockImplementation(() => Promise.resolve(false));
 
       // Act & Assert
-      await expect(authService.login(loginDto)).rejects.toThrow(UnauthorizedException);
-      await expect(authService.login(loginDto)).rejects.toThrow('Неверный email или пароль');
+      await expect(authService.login(loginDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(authService.login(loginDto)).rejects.toThrow(
+        'Неверный email или пароль',
+      );
     });
   });
 
@@ -296,7 +320,9 @@ describe('AuthService', () => {
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
         where: { id: userId },
       });
-      expect(mockUserRepository.update).toHaveBeenCalledWith(userId, { refreshToken: '' });
+      expect(mockUserRepository.update).toHaveBeenCalledWith(userId, {
+        refreshToken: '',
+      });
       expect(result.message).toBe('Выход выполнен');
     });
 
@@ -305,8 +331,12 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(authService.logout(userId)).rejects.toThrow(NotFoundException);
-      await expect(authService.logout(userId)).rejects.toThrow('Пользователь не найден');
+      await expect(authService.logout(userId)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(authService.logout(userId)).rejects.toThrow(
+        'Пользователь не найден',
+      );
     });
   });
 
@@ -328,7 +358,9 @@ describe('AuthService', () => {
       mockJwtService.signAsync
         .mockResolvedValueOnce('new-access-token')
         .mockResolvedValueOnce('new-refresh-token');
-      jest.spyOn(bcrypt, 'hash').mockImplementation(() => Promise.resolve('hashedRefreshToken'));
+      jest
+        .spyOn(bcrypt, 'hash')
+        .mockImplementation(() => Promise.resolve('hashedRefreshToken'));
       mockConfigService.get.mockReturnValue(10);
     });
 
@@ -359,8 +391,12 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(authService.refreshTokens(userId)).rejects.toThrow(UnauthorizedException);
-      await expect(authService.refreshTokens(userId)).rejects.toThrow('Пользователь не найден');
+      await expect(authService.refreshTokens(userId)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(authService.refreshTokens(userId)).rejects.toThrow(
+        'Пользователь не найден',
+      );
     });
   });
 
