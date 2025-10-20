@@ -8,7 +8,7 @@ import { AllSkillsDto, SkillDto } from './dto/skills.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Skill } from '../skills/entities/skill.entity';
-import { User } from 'src/users/entities/user.entity';
+import { User } from '../../src/users/entities/user.entity';
 
 @Injectable()
 export class SkillsService {
