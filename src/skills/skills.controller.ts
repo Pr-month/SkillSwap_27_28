@@ -30,10 +30,7 @@ export class SkillsController {
     description: 'Список навыков успешно получен',
     type: [Skill]
   })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiQuery({ name: 'category', required: false, type: String })
+  @ApiQuery({  type: () => AllSkillsDto })
   @Get()
   async findAll(@Query() dto: AllSkillsDto) {
     return await this.skillsService.findAll(dto);
