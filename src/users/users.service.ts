@@ -7,13 +7,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcryptjs from 'bcrypt';
-import { appConfig, IAppConfig } from 'src/config';
+import { appConfig, IAppConfig } from '../../src/config';
 import { In, Repository } from 'typeorm';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
-import { Skill } from 'src/skills/entities/skill.entity';
-import { Category } from 'src/categories/entities/category.entity';
+import { Skill } from '../../src/skills/entities/skill.entity';
+import { Category } from '../../src/categories/entities/category.entity';
 
 export interface PaginationOptions {
   page?: number;
