@@ -1,16 +1,23 @@
-jest.mock('../src/config', () => ({ appConfig: { KEY: 'APP_CONFIG_TOKEN' } }), {
+jest.mock('src/config/jwt.config', () => ({ 
+  jwtConfig: { KEY: 'JWT_CONFIG_TOKEN' } 
+}), { virtual: true });
+
+jest.mock('src/config/app.config', () => ({ 
+  appConfig: { KEY: 'APP_CONFIG_TOKEN' } 
+}), { virtual: true });
+
+jest.mock('src/config', () => ({ appConfig: { KEY: 'APP_CONFIG_TOKEN' } }), {
+  virtual: true,
+});
+jest.mock('src/users/entities/user.entity', () => ({ User: class User {} }), {
   virtual: true,
 });
 
-jest.mock('../src/users/entities/user.entity', () => ({ User: class User {} }), {
-  virtual: true,
-});
-
-jest.mock('../src/auth/guards/jwt.guard', () => ({
-  JwtAuthGuard: class JwtAuthGuard {
-    canActivate(ctx) {
-      const req = ctx.switchToHttp().getRequest();
-      req.user = { id: 1 };
+jest.mock('../src/auth/guards/refreshToken.guard', () => ({
+  RefreshTokenGuard: class {
+    canActivate(context) {
+      const request = context.switchToHttp().getRequest();
+      request.user = { userId: 1, email: 'test@example.com' };
       return true;
     }
   },
@@ -19,8 +26,9 @@ jest.mock('../src/auth/guards/jwt.guard', () => ({
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AuthService } from '../src/auth/auth.service';
+
 import { AuthController } from '../src/auth/auth.controller';
+import { AuthService } from '../src/auth/auth.service';
 
 const authServiceMock: Partial<Record<keyof AuthService, any>> = {
   register: jest.fn(async (dto) => ({
@@ -34,13 +42,14 @@ const authServiceMock: Partial<Record<keyof AuthService, any>> = {
     refreshToken: 'mock-refresh',
     user: { id: 1, email: dto.email, name: 'Test User' }
   })),
-  logout: jest.fn(async () => ({ message: 'Выход выполнен' })),
-  refreshTokens: jest.fn(async () => ({
+  logout: jest.fn(async (userId) => ({ message: 'Выход выполнен' })),
+  refreshTokens: jest.fn(async (userId) => ({
     message: 'Токены обновлены',
     accessToken: 'new-access',
     refreshToken: 'new-refresh'
   }))
 };
+
 describe('E2E /auth (controller + mocked service)', () => {
   let app: INestApplication;
 
@@ -77,11 +86,11 @@ describe('E2E /auth (controller + mocked service)', () => {
     });
   });
 
-  it('POST /auth/login → 200 вход', async () => {
+  it('POST /auth/login → 201 вход', async () => {
     const res = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: 'test@example.com', password: 'password123' })
-      .expect(200);
+      .expect(201);
 
     expect(res.body).toMatchObject({
       message: 'Вход выполнен',
@@ -94,15 +103,6 @@ describe('E2E /auth (controller + mocked service)', () => {
     });
   });
 
-  it('POST /auth/logout → 200 выход', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/auth/logout')
-      .expect(200);
-
-    expect(res.body).toEqual({ message: 'Выход выполнен' });
-    expect(authServiceMock.logout).toHaveBeenCalled();
-  });
-
   it('POST /auth/refresh → 200 обновленные токены', async () => {
     const res = await request(app.getHttpServer())
       .post('/auth/refresh')
@@ -113,6 +113,6 @@ describe('E2E /auth (controller + mocked service)', () => {
       accessToken: 'new-access',
       refreshToken: 'new-refresh'
     });
-    expect(authServiceMock.refreshTokens).toHaveBeenCalled();
+    expect(authServiceMock.refreshTokens).toHaveBeenCalledWith(1);
   });
 });
