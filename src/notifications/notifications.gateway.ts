@@ -15,7 +15,9 @@ import { SocketWithUser } from './types';
     origin: '*',
   },
 })
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   constructor(private readonly wsJwtGuard: WsJwtGuard) {}
 
   @WebSocketServer()
@@ -28,7 +30,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     try {
       this.wsJwtGuard.verifyToken(client);
       const userId = client.data.user._id;
-      
+
       client.join(userId.toString());
       this.logger.log(`Client connected: ${client.id}, User ID: ${userId}`);
     } catch (error) {
@@ -77,12 +79,15 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   // Общий метод для уведомлений
-  notifyUser(userId: number, payload: {
-    type: string;
-    skillName: string;
-    fromUser: string;
-    message?: string;
-  }) {
+  notifyUser(
+    userId: number,
+    payload: {
+      type: string;
+      skillName: string;
+      fromUser: string;
+      message?: string;
+    },
+  ) {
     this.server.to(userId.toString()).emit('notificateNewRequest', {
       ...payload,
       timestamp: new Date(),
