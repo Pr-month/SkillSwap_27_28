@@ -70,7 +70,7 @@ export class RequestsService {
         skillName: requestedSkill.title,
         fromUser: sender.name,
         requestId: savedRequest.id,
-      }
+      },
     );
 
     return savedRequest;
@@ -142,20 +142,20 @@ export class RequestsService {
     // Отправка уведомлений при изменении статуса
     if (dto.status !== undefined && dto.status !== previousStatus) {
       const senderName = request.receiver.name; // Исправлено с username на name
-      
+
       if (dto.status === RequestStatus.REJECTED) {
         // Уведомление отправителю об отклонении
         this.notificationsGateway.notifyRequestRejected(
           request.sender.id,
           request.requestedSkill.title, // Исправлено с name на title
-          senderName
+          senderName,
         );
       } else if (dto.status === RequestStatus.ACCEPTED) {
         // Уведомление отправителю о принятии
         this.notificationsGateway.notifyRequestAccepted(
           request.sender.id,
           request.requestedSkill.title, // Исправлено с name на title
-          senderName
+          senderName,
         );
       }
     }
