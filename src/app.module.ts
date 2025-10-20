@@ -20,6 +20,9 @@ import { CategoriesModule } from './categories/categories.module';
 import { RequestsModule } from './requests/requests.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { NotificationsGateway } from './notifications/notifications.gateway';
+import { WsJwtGuard } from './notifications/guards/ws-jwt.guard';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -63,8 +66,9 @@ import { join } from 'path';
     CategoriesModule,
     RequestsModule,
     CategoriesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, JwtStrategy],
+  providers: [AppService, JwtStrategy, NotificationsGateway, WsJwtGuard],
 })
-export class AppModule { }
+export class AppModule {}

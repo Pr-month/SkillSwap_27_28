@@ -6,8 +6,6 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-// import { CreateAuthDto } from './dto/create-auth.dto';
-// import { UpdateAuthDto } from './dto/update-auth.dto';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
@@ -34,7 +32,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    @Inject(jwtConfig.KEY) // Инжектим конкретный конфиг по ключу
+    @Inject(jwtConfig.KEY)
     private readonly jwtConfig: IJwtConfig,
     @Inject(appConfig.KEY)
     private readonly appConfig: { bcryptSaltRounds: number },
@@ -57,11 +55,6 @@ export class AuthService {
         );
       }
 
-      // Получаем конфигурацию JWT
-      // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
-
-      // Хешируем пароль
-      // const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
       const saltRounds = this.appConfig.bcryptSaltRounds;
       const hashedPassword = await bcrypt.hash(
         registerDto.password,
@@ -115,7 +108,6 @@ export class AuthService {
   }
 
   private async _generateTokens(payload: JwtPayload): Promise<Tokens> {
-    // const jwtConfig = this.configService.get<IJwtConfig>('JWT_CONFIG')!;
     const [accessToken, refreshToken] = await Promise.all([
       // Access token - используем основной JWT модуль
       this.jwtService.signAsync(payload),
@@ -180,7 +172,7 @@ export class AuthService {
   async refreshTokens(userId: number) {
     // Находим пользователя
     const user = await this.userRepository.findOne({
-      where: { id: userId }
+      where: { id: userId },
     });
 
     if (!user) {
@@ -195,17 +187,21 @@ export class AuthService {
     });
 
     // Сохраняем новый refresh token в БД
-    const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
-    const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, saltRounds);
+    const saltRounds =
+      this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+    const hashedRefreshToken = await bcrypt.hash(
+      tokens.refreshToken,
+      saltRounds,
+    );
 
     await this.userRepository.update(user.id, {
-    refreshToken: hashedRefreshToken,
-  });
+      refreshToken: hashedRefreshToken,
+    });
 
-  return {
-    message: 'Токены обновлены',
-    accessToken: tokens.accessToken,
-    refreshToken: tokens.refreshToken,
-  }
+    return {
+      message: 'Токены обновлены',
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    };
   }
 }

@@ -1,4 +1,4 @@
-import { AuthGuard } from "@nestjs/passport";
+import { AuthGuard } from '@nestjs/passport';
 
 import {
   ExecutionContext,
@@ -16,7 +16,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (err || !user) {
       throw err || new UnauthorizedException('Invalid jwt token');
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return user;
   }
 }
