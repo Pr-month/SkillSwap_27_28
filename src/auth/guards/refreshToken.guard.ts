@@ -4,17 +4,26 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Observable } from 'rxjs';
 
 @Injectable()
 export class RefreshTokenGuard extends AuthGuard('refresh-jwt') {
-  canActivate(context: ExecutionContext) {
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
     return super.canActivate(context);
   }
 
-  handleRequest(err, user) {
+  handleRequest<TUser = any>(
+    err: any,
+    user: any,
+    info: any,
+    context: ExecutionContext,
+    status?: any,
+  ): TUser {
     if (err || !user) {
       throw err || new UnauthorizedException('Invalid refresh token');
     }
-    return user;
+    return user as TUser;
   }
 }

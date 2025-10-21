@@ -50,7 +50,7 @@ export class UsersService {
   async findAll(options?: PaginationOptions): Promise<PaginatedResult<User>> {
     const page = options?.page || 1;
     const limit = options?.limit || 10;
-    
+
     // Проверка валидности параметров
     if (page < 1 || limit < 1) {
       throw new BadRequestException('Page and limit must be positive numbers');

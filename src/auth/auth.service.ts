@@ -172,7 +172,7 @@ export class AuthService {
   async refreshTokens(userId: number) {
     // Находим пользователя
     const user = await this.userRepository.findOne({
-      where: { id: userId }
+      where: { id: userId },
     });
 
     if (!user) {
@@ -187,17 +187,21 @@ export class AuthService {
     });
 
     // Сохраняем новый refresh token в БД
-    const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
-    const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, saltRounds);
+    const saltRounds =
+      this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
+    const hashedRefreshToken = await bcrypt.hash(
+      tokens.refreshToken,
+      saltRounds,
+    );
 
     await this.userRepository.update(user.id, {
-    refreshToken: hashedRefreshToken,
-  });
+      refreshToken: hashedRefreshToken,
+    });
 
-  return {
-    message: 'Токены обновлены',
-    accessToken: tokens.accessToken,
-    refreshToken: tokens.refreshToken,
-  }
+    return {
+      message: 'Токены обновлены',
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    };
   }
 }

@@ -24,7 +24,6 @@ import { NotificationsGateway } from './notifications/notifications.gateway';
 import { WsJwtGuard } from './notifications/guards/ws-jwt.guard';
 import { NotificationsModule } from './notifications/notifications.module';
 
-
 @Module({
   imports: [
     ServeStaticModule.forRoot({
@@ -70,11 +69,6 @@ import { NotificationsModule } from './notifications/notifications.module';
     NotificationsModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    JwtStrategy,
-    NotificationsGateway,
-    WsJwtGuard
-  ],
+  providers: [AppService, JwtStrategy, NotificationsGateway, WsJwtGuard],
 })
 export class AppModule {}

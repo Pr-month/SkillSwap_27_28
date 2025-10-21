@@ -41,10 +41,7 @@ export class UsersController {
   // async findAll(): Promise<User[]> {
   //   return this.usersService.findAll();
   // }
-  async findAll(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
+  async findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.usersService.findAll({
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,

@@ -8,7 +8,7 @@ import { AllSkillsDto, SkillDto } from './dto/skills.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Skill } from '../skills/entities/skill.entity';
-import { User } from 'src/users/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class SkillsService {
@@ -78,14 +78,14 @@ export class SkillsService {
     await this.skillsRepository.delete(id);
     return { message: 'Навык удален' };
   }
-  
+
   async addToFavorites(skillId: number, userId: number) {
     // Находим навык
     const skill = await this.skillsRepository.findOne({
       where: { id: skillId },
-      relations: ['owner']
+      relations: ['owner'],
     });
-    
+
     if (!skill) {
       throw new NotFoundException('Навык не найден');
     }
@@ -93,7 +93,7 @@ export class SkillsService {
     // Находим пользователя с его избранными навыками
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['favoriteSkills']
+      relations: ['favoriteSkills'],
     });
 
     if (!user) {
@@ -101,7 +101,9 @@ export class SkillsService {
     }
 
     // Проверяем, не добавлен ли уже навык в избранное
-    const isAlreadyFavorite = user.favoriteSkills.some(favSkill => favSkill.id === skillId);
+    const isAlreadyFavorite = user.favoriteSkills.some(
+      (favSkill) => favSkill.id === skillId,
+    );
     if (isAlreadyFavorite) {
       throw new ConflictException('Навык уже в избранном');
     }
@@ -116,7 +118,7 @@ export class SkillsService {
   async removeFromFavorites(skillId: number, userId: number) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['favoriteSkills']
+      relations: ['favoriteSkills'],
     });
 
     if (!user) {
@@ -124,7 +126,9 @@ export class SkillsService {
     }
 
     // Фильтруем избранные навыки, удаляя указанный
-    user.favoriteSkills = user.favoriteSkills.filter(favSkill => favSkill.id !== skillId);
+    user.favoriteSkills = user.favoriteSkills.filter(
+      (favSkill) => favSkill.id !== skillId,
+    );
     await this.userRepository.save(user);
 
     return { message: 'Навык удален из избранного' };
@@ -133,7 +137,7 @@ export class SkillsService {
   async getFavorites(userId: number) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['favoriteSkills', 'favoriteSkills.owner']
+      relations: ['favoriteSkills', 'favoriteSkills.owner'],
     });
 
     if (!user) {
