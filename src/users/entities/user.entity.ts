@@ -1,11 +1,5 @@
 import { Exclude } from 'class-transformer';
-import {
-  // MinLength,
-  IsDateString,
-  IsEmail,
-  IsOptional,
-  Length,
-} from 'class-validator';
+import { IsDateString, IsEmail, IsOptional, Length } from 'class-validator';
 import {
   Column,
   Entity,
@@ -17,24 +11,37 @@ import {
 import { Gender, UserRole } from '../users.enums';
 import { Skill } from '../../skills/entities/skill.entity';
 import { Category } from '../../categories/entities/category.entity';
+import { ApiProperty, ApiHideProperty } from '@nestjs/swagger';
 
 @Entity()
 export class User {
+  @ApiProperty({ example: 1, description: 'Идентификатор пользователя' })
   @PrimaryGeneratedColumn()
   id: number;
 
+  @ApiProperty({ example: 'Иван Иванов', description: 'Имя пользователя' })
   @Column()
   @Length(2, 50, { message: 'Имя должно быть от 2 до 50 символов' })
   name: string;
 
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'Email пользователя',
+  })
   @Column({ unique: true })
   @IsEmail({}, { message: 'Некорректный формат email' })
   email: string;
 
+  @ApiHideProperty()
   @Column()
   @Exclude()
   password: string;
 
+  @ApiProperty({
+    example: 'Информация о себе...',
+    description: 'О себе',
+    required: false,
+  })
   @Column()
   @IsOptional()
   @Length(0, 500, {
@@ -42,14 +49,29 @@ export class User {
   })
   about: string;
 
+  @ApiProperty({
+    example: '1990-01-01',
+    description: 'Дата рождения',
+    required: false,
+    type: String,
+    format: 'date',
+  })
   @Column({ type: 'date' })
   @IsDateString({}, { message: 'Некорректный формат даты рождения' })
   @IsOptional()
   birthdate: Date;
 
+  @ApiProperty({ example: 'Москва', description: 'Город', required: false })
   @Column()
   city: string;
 
+  @ApiProperty({
+    enum: Gender,
+    example: Gender.MALE,
+    description: 'Пол',
+    required: false,
+    nullable: true,
+  })
   @Column({
     type: 'enum',
     enum: Gender,
@@ -57,20 +79,32 @@ export class User {
   })
   gender: Gender;
 
+  @ApiProperty({
+    description: 'Аватар',
+    required: false,
+  })
   @Column({ nullable: true })
   avatar: string;
 
+  @ApiHideProperty()
   @OneToMany(() => Skill, (skill) => skill.owner)
   skills: Skill[];
 
+  @ApiHideProperty()
   @ManyToMany(() => Category)
   @JoinTable()
   wantToLearn: Category[];
 
+  @ApiHideProperty()
   @ManyToMany(() => Skill)
   @JoinTable()
   favoriteSkills: Skill[];
 
+  @ApiProperty({
+    example: UserRole.USER,
+    enum: UserRole,
+    description: 'Роль пользователя',
+  })
   @Column({
     type: 'enum',
     enum: UserRole,
@@ -78,6 +112,7 @@ export class User {
   })
   role: UserRole;
 
+  @ApiHideProperty()
   @Column({ nullable: true })
   @Exclude()
   refreshToken: string;
