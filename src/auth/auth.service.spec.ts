@@ -14,6 +14,8 @@ import {
   UnauthorizedException,
   NotFoundException,
 } from '@nestjs/common';
+import { jwtConfig } from '../config/jwt.config';
+import { appConfig } from '../config/app.config';
 
 // Моки
 const mockUserRepository = {
@@ -32,8 +34,8 @@ const mockConfigService = {
 };
 
 const mockJwtConfig = {
-  jwtRefreshSecret: 'refresh-secret',
-  jwtRefreshExpiresIn: '7d',
+  jwtRefreshSecret: 'your_jwt_refresh_secret_key',
+  jwtRefreshExpiresIn: '604800s',
 };
 
 const mockAppConfig = {
@@ -61,11 +63,11 @@ describe('AuthService', () => {
           useValue: mockConfigService,
         },
         {
-          provide: 'jwt-config',
+          provide: jwtConfig.KEY,
           useValue: mockJwtConfig,
         },
         {
-          provide: 'app-config',
+          provide: appConfig.KEY,
           useValue: mockAppConfig,
         },
       ],
@@ -73,6 +75,13 @@ describe('AuthService', () => {
 
     authService = module.get<AuthService>(AuthService);
     jwtService = module.get<JwtService>(JwtService);
+
+    mockConfigService.get.mockImplementation((key: string) => {
+      const config = {
+        'BCRYPT_SALT_ROUNDS': 10,
+      };
+      return config[key];
+    });
 
     // Очистка моков перед каждым тестом
     jest.clearAllMocks();
@@ -350,14 +359,14 @@ describe('AuthService', () => {
     };
 
     const mockTokens = {
-      accessToken: 'new-access-token',
-      refreshToken: 'new-refresh-token',
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
     };
 
     beforeEach(() => {
       mockJwtService.signAsync
-        .mockResolvedValueOnce('new-access-token')
-        .mockResolvedValueOnce('new-refresh-token');
+        .mockResolvedValueOnce('access-token')
+        .mockResolvedValueOnce('refresh-token');
       jest
         .spyOn(bcrypt, 'hash')
         .mockImplementation(() => Promise.resolve('hashedRefreshToken'));
@@ -377,13 +386,13 @@ describe('AuthService', () => {
         where: { id: userId },
       });
       expect(mockJwtService.signAsync).toHaveBeenCalledTimes(2);
-      expect(bcrypt.hash).toHaveBeenCalledWith('new-refresh-token', 10);
+      expect(bcrypt.hash).toHaveBeenCalledWith('refresh-token', 10);
       expect(mockUserRepository.update).toHaveBeenCalledWith(mockUser.id, {
         refreshToken: 'hashedRefreshToken',
       });
       expect(result.message).toBe('Токены обновлены');
-      expect(result.accessToken).toBe('new-access-token');
-      expect(result.refreshToken).toBe('new-refresh-token');
+      expect(result.accessToken).toBe('access-token');
+      expect(result.refreshToken).toBe('refresh-token');
     });
 
     it('should throw UnauthorizedException if user not found', async () => {
