@@ -8,6 +8,11 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import {
+  ApiConsumes,
+  ApiBody,
+  ApiResponse,
+} from '@nestjs/swagger';
 
 @Controller('upload')
 export class FilesController {
@@ -26,6 +31,21 @@ export class FilesController {
       }),
     }),
   )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        image: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Изображение успешно загружено' })
+  @ApiResponse({ status: 400, description: 'Ошибка при загрузке файла' })
+
   async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     return {
