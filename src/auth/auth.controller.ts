@@ -18,6 +18,7 @@ import {
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenGuard } from './guards/refreshToken.guard';
+import { AuthResponseDto } from './dto/auth-response.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -31,6 +32,7 @@ export class AuthController {
   @ApiResponse({
     status: 201,
     description: 'Пользователь успешно зарегистрирован',
+    type: AuthResponseDto,
   })
   @ApiResponse({
     status: 409,
@@ -46,7 +48,11 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Логин' })
-  @ApiResponse({ status: 200, description: 'Успешный логин' })
+  @ApiResponse({
+    status: 200,
+    description: 'Успешный логин',
+    type: AuthResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Авторизация не пройдена' })
   async login(@Body() dto: LoginDto) {
     return await this.authService.login(dto);
@@ -69,6 +75,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Токены успешно обновлены',
+    type: AuthResponseDto,
   })
   @ApiResponse({
     status: 401,
