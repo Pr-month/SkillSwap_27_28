@@ -13,6 +13,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Category } from '../../categories/entities/category.entity';
 
 @Entity()
 export class Skill {
@@ -31,10 +32,10 @@ export class Skill {
   @Length(0, 1000, { message: 'Описание не должно превышать 1000 символов' })
   description: string;
 
-  // @ManyToOne(() => Category, { eager: true })
-  // @JoinColumn()
-  // @IsNotEmpty({ message: 'Категория обязательна' })
-  // category: Category;
+  @ManyToOne(() => Category, { eager: true })
+  @JoinColumn()
+  @IsNotEmpty({ message: 'Категория обязательна' })
+  category: Category;
 
   @Column('simple-array', { nullable: true })
   @IsOptional()
