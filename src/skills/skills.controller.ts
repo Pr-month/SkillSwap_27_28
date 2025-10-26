@@ -15,8 +15,19 @@ import { SkillsService } from './skills.service';
 import { SkillDto, AllSkillsDto } from './dto/skills.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { AuthRequest } from '../auth/types';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiProperty, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Skill } from './entities/skill.entity';
+
+class SkillsListResponseDto {
+  @ApiProperty({ type: [Skill], description: 'Массив навыков' })
+  data: Skill[];
+
+  @ApiProperty({ example: 1, description: 'Текущая страница' })
+  page: number;
+
+  @ApiProperty({ example: 5, description: 'Всего страниц' })
+  totalPages: number;
+}
 
 @ApiTags('skills')
 @Controller('skills')
@@ -28,7 +39,7 @@ export class SkillsController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Список навыков успешно получен',
-    type: [Skill]
+    type: SkillsListResponseDto
   })
   @ApiQuery({  type: () => AllSkillsDto })
   @Get()
