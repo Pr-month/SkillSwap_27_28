@@ -72,6 +72,17 @@ export class UsersController {
   //   return this.usersService.update(+id, updateUserDto);
   // }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Получить пользователя по ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Пользователь найден',
+    type: User 
+  })
+  @ApiResponse({ 
+  status: 404, 
+  description: 'Пользователь не найден' 
+  })
   async findOne(@Param('id') id: string): Promise<User> {
     return this.usersService.findOne(+id);
   }
