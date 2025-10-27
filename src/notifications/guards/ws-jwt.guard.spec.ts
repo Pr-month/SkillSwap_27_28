@@ -4,7 +4,6 @@ import { WsException } from '@nestjs/websockets';
 describe('WsJwtGuard', () => {
   const jwtService = { verify: jest.fn() };
   const config = { jwtSecret: 'secret' };
-  // ✔️ Передаем само значение конфига, а не объект провайдера
   const guard = new WsJwtGuard(jwtService as any, config as any);
 
   const makeClient = (token?: any) =>
