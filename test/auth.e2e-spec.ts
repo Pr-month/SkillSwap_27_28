@@ -23,6 +23,16 @@ jest.mock('../src/auth/guards/refreshToken.guard', () => ({
   },
 }));
 
+jest.mock('../src/auth/guards/jwt-auth.guard', () => ({
+  JwtAuthGuard: class {
+    canActivate(context) {
+      const request = context.switchToHttp().getRequest();
+      request.user = { _id: 1, email: 'test@example.com', role: 'customer' };
+      return true;
+    }
+  },
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
@@ -101,6 +111,17 @@ describe('E2E /auth (controller + mocked service)', () => {
       email: 'test@example.com',
       password: 'password123'
     });
+  });
+
+  it('POST /auth/logout → 200 успешный выход', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/auth/logout')
+      .expect(200);
+
+    expect(res.body).toEqual({
+      message: 'Выход выполнен'
+    });
+    expect(authServiceMock.logout).toHaveBeenCalledWith(1);
   });
 
   it('POST /auth/refresh → 200 обновленные токены', async () => {

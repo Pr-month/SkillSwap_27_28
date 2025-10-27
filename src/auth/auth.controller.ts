@@ -19,6 +19,8 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenGuard } from './guards/refreshToken.guard';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AuthRequest } from './types';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -59,14 +61,14 @@ export class AuthController {
     return await this.authService.login(dto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('logout')
   @ApiOperation({ summary: 'Логаут' })
   @ApiResponse({ status: 200, description: 'Успешный логаут' })
-  @ApiUnauthorizedResponse({ description: 'Невалидный refresh token' })
+  @ApiUnauthorizedResponse({ description: 'Невалидный jwt token' })
   async logout(
-    @Req() req: Request & { user: { userId: number; roles?: string[] } },
-  ) {
-    return await this.authService.logout(req.user.userId);
+    @Req() req: AuthRequest) {
+    return await this.authService.logout(req.user._id);
   }
 
   @UseGuards(RefreshTokenGuard)
@@ -83,8 +85,7 @@ export class AuthController {
     description: 'Невалидный refresh token',
   })
   async refresh(
-    @Req() req: Request & { user: { userId: number; email: string } },
-  ) {
-    return await this.authService.refreshTokens(req.user.userId);
+    @Req() req: AuthRequest) {
+    return await this.authService.refreshTokens(req.user._id);
   }
 }

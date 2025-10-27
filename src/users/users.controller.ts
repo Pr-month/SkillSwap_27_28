@@ -33,12 +33,12 @@ import {
 
 @ApiTags('Users')
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Получить список пользователей' })
+  @ApiResponse({ status: 200, description: 'OK', type: [User] })
   // async findAll(): Promise<User[]> {
   //   return this.usersService.findAll();
   // }
@@ -73,6 +73,17 @@ export class UsersController {
   //   return this.usersService.update(+id, updateUserDto);
   // }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Получить пользователя по ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Пользователь найден',
+    type: User 
+  })
+  @ApiResponse({ 
+  status: 404, 
+  description: 'Пользователь не найден' 
+  })
   async findOne(@Param('id') id: string): Promise<User> {
     return this.usersService.findOne(+id);
   }
@@ -95,6 +106,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Удалить пользователя (только админ)' })
   @ApiResponse({ status: 200, description: 'Удалён' })
