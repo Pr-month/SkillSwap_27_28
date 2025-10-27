@@ -48,6 +48,7 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Логин' })
+  @ApiBody({ type: LoginDto })
   @ApiResponse({
     status: 200,
     description: 'Успешный логин',
