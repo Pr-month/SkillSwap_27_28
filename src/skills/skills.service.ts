@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Skill } from '../skills/entities/skill.entity';
 import { User } from '../users/entities/user.entity';
+import { Category } from '../categories/entities/category.entity';
 
 @Injectable()
 export class SkillsService {
@@ -17,7 +18,10 @@ export class SkillsService {
     private readonly skillsRepository: Repository<Skill>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Category)
+    private readonly categoriesRepository: Repository<Category>,
   ) {}
+
   async findAll(dto: AllSkillsDto) {
     const { page = 1, limit = 20, search = '', category } = dto;
     const skip = (page - 1) * limit;
@@ -49,28 +53,62 @@ export class SkillsService {
   }
 
   async create(dto: SkillDto, ownerId: number) {
-    const owner = await this.userRepository.findOneOrFail({
+    const owner = await this.userRepository.findOne({
       where: { id: ownerId },
     });
+    if (!owner) throw new NotFoundException('Пользователь не найден');
+
+    if (!dto.category) throw new NotFoundException('Категория не указана');
+
+    const category = await this.categoriesRepository.findOne({
+      where: { name: dto.category },
+    });
+    if (!category) throw new NotFoundException('Категория не найдена');
+
     const skill = this.skillsRepository.create({
-      ...dto,
+      title: dto.title,
+      description: dto.description,
+      images: dto.images,
+      category,
       owner,
     });
     return await this.skillsRepository.save(skill);
   }
 
   async update(id: number, dto: SkillDto, ownerId: number) {
-    const skill = await this.skillsRepository.findOneBy({ id });
+    const skill = await this.skillsRepository.findOne({
+      where: { id },
+      relations: ['owner', 'category'],
+    });
     if (!skill) throw new NotFoundException('Навык не найден');
     if (skill.owner.id !== ownerId) {
       throw new ForbiddenException('Недостаточно прав');
     }
-    await this.skillsRepository.update(id, dto);
-    return await this.skillsRepository.findOneBy({ id });
+
+    if (dto.category) {
+      const category = await this.categoriesRepository.findOne({
+        where: { name: dto.category },
+      });
+      if (!category) throw new NotFoundException('Категория не найдена');
+      skill.category = category;
+    }
+
+    if (dto.title) skill.title = dto.title;
+    if (dto.description !== undefined) skill.description = dto.description;
+    if (dto.images !== undefined) skill.images = dto.images;
+
+    await this.skillsRepository.save(skill);
+    return await this.skillsRepository.findOne({
+      where: { id },
+      relations: ['category'],
+    });
   }
 
   async remove(id: number, ownerId: number) {
-    const skill = await this.skillsRepository.findOneBy({ id });
+    const skill = await this.skillsRepository.findOne({
+      where: { id },
+      relations: ['owner'],
+    });
     if (!skill) throw new NotFoundException('Навык не найден');
     if (skill.owner.id !== ownerId) {
       throw new ForbiddenException('Недостаточно прав');
@@ -83,7 +121,6 @@ export class SkillsService {
     // Находим навык
     const skill = await this.skillsRepository.findOne({
       where: { id: skillId },
-      relations: ['owner'],
     });
 
     if (!skill) {

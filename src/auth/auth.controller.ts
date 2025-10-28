@@ -18,6 +18,9 @@ import {
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenGuard } from './guards/refreshToken.guard';
+import { AuthResponseDto } from './dto/auth-response.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AuthRequest } from './types';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -31,6 +34,7 @@ export class AuthController {
   @ApiResponse({
     status: 201,
     description: 'Пользователь успешно зарегистрирован',
+    type: AuthResponseDto,
   })
   @ApiResponse({
     status: 409,
@@ -46,20 +50,25 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Логин' })
-  @ApiResponse({ status: 200, description: 'Успешный логин' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Успешный логин',
+    type: AuthResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Авторизация не пройдена' })
   async login(@Body() dto: LoginDto) {
     return await this.authService.login(dto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('logout')
   @ApiOperation({ summary: 'Логаут' })
   @ApiResponse({ status: 200, description: 'Успешный логаут' })
-  @ApiUnauthorizedResponse({ description: 'Невалидный refresh token' })
+  @ApiUnauthorizedResponse({ description: 'Невалидный jwt token' })
   async logout(
-    @Req() req: Request & { user: { userId: number; roles?: string[] } },
-  ) {
-    return await this.authService.logout(req.user.userId);
+    @Req() req: AuthRequest) {
+    return await this.authService.logout(req.user._id);
   }
 
   @UseGuards(RefreshTokenGuard)
@@ -69,14 +78,14 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Токены успешно обновлены',
+    type: AuthResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Невалидный refresh token',
   })
   async refresh(
-    @Req() req: Request & { user: { userId: number; email: string } },
-  ) {
-    return await this.authService.refreshTokens(req.user.userId);
+    @Req() req: AuthRequest) {
+    return await this.authService.refreshTokens(req.user._id);
   }
 }

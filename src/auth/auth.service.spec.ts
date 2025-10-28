@@ -12,6 +12,8 @@ import {
   ConflictException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { jwtConfig } from '../config/jwt.config';
+import { appConfig } from '../config/app.config';
 
 const mockUserRepository = {
   findOne: jest.fn(),
@@ -29,8 +31,8 @@ const mockConfigService = {
 };
 
 const mockJwtConfig = {
-  jwtRefreshSecret: 'refresh-secret',
-  jwtRefreshExpiresIn: '7d',
+  jwtRefreshSecret: 'your_jwt_refresh_secret_key',
+  jwtRefreshExpiresIn: '604800s',
 };
 
 const mockAppConfig = {

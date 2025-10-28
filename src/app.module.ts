@@ -31,6 +31,11 @@ import { NotificationsModule } from './notifications/notifications.module';
     }),
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [
+        `.env.${process.env.NODE_ENV}.local`,
+        '.env.local', 
+        '.env'
+      ],
       load: [appConfig, dbConfig, jwtConfig],
     }),
     TypeOrmModule.forRootAsync({

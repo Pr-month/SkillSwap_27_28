@@ -9,14 +9,14 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { jwtConfig } from 'src/config/jwt.config';
+import { jwtConfig } from '../config/jwt.config';
 import { Repository } from 'typeorm';
 import { IJwtConfig } from '../config/config.types';
 import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/users.enums';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { appConfig } from 'src/config/app.config';
+import { appConfig } from '../config/app.config';
 import { JwtPayload } from './types';
 import { ConfigService } from '@nestjs/config';
 
@@ -94,7 +94,10 @@ export class AuthService {
       return {
         message: 'Пользователь успешно зарегистрирован',
         user: userWithoutSensitiveData,
-        tokens,
+        tokens: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        },
       };
     } catch (error) {
       console.log(error);
@@ -154,7 +157,10 @@ export class AuthService {
     return {
       message: 'Вход выполнен',
       user: userWithoutSensitiveData,
-      ...tokens,
+      tokens: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
     };
   }
 
@@ -200,8 +206,10 @@ export class AuthService {
 
     return {
       message: 'Токены обновлены',
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
+      tokens: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
     };
   }
 }
