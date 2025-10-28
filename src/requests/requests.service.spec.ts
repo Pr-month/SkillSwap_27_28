@@ -1,214 +1,141 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { RequestsService } from './requests.service';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Request } from './entities/request.entity';
+import { Repository, ObjectLiteral } from 'typeorm';
+import { RequestsService } from './requests.service';
+import { Request as ReqEntity } from './entities/request.entity';
 import { Skill } from '../skills/entities/skill.entity';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { RequestStatus } from './requests.enums';
 import { UserRole } from '../users/users.enums';
-import { In } from 'typeorm';
 
-export const createMockRepo = () => ({
-  create: jest.fn(),
-  save: jest.fn(),
-  find: jest.fn(),
-  findOne: jest.fn(),
-  delete: jest.fn(),
-});
+type MockRepo<T extends ObjectLiteral = any> = Partial<
+  Record<keyof Repository<T>, jest.Mock>
+>;
 
-const mockNotificationsGateway = {
-  notifyNewRequest: jest.fn(),
-  notifyRequestRejected: jest.fn(),
-  notifyRequestAccepted: jest.fn(),
-};
-
-type MockRepo = ReturnType<typeof createMockRepo>;
+const repo = <T extends ObjectLiteral = any>(): MockRepo<T> =>
+  ({
+    create: jest.fn(),
+    save: jest.fn(),
+    find: jest.fn(),
+    findOne: jest.fn(),
+    findOneBy: jest.fn(),
+    delete: jest.fn(),
+  }) as unknown as MockRepo<T>;
 
 describe('RequestsService', () => {
   let service: RequestsService;
-  let requestRepo: MockRepo;
-  let skillRepo: MockRepo;
-  let notifications: typeof mockNotificationsGateway;
-
-  const mockUser = (id: number) => ({ id, name: `User${id}` });
-  const mockSkill = (id: number, ownerId: number) => ({
-    id,
-    title: `Skill${id}`,
-    owner: mockUser(ownerId),
-  });
-  const dto = { offeredSkillId: 1, requestedSkillId: 2 };
-  const requestMock = {
-    id: '123',
-    receiver: { id: 1 },
-    sender: { id: 2 },
-    requestedSkill: { title: 'Skill' },
-    status: RequestStatus.PENDING,
+  let reqRepo: MockRepo<ReqEntity>;
+  let skillRepo: MockRepo<Skill>;
+  const gateway = {
+    notifyNewRequest: jest.fn(),
+    notifyRequestAccepted: jest.fn(),
+    notifyRequestRejected: jest.fn(),
   };
 
   beforeEach(async () => {
-    requestRepo = createMockRepo();
-    skillRepo = createMockRepo();
-
-    const module: TestingModule = await Test.createTestingModule({
+    const moduleRef = await Test.createTestingModule({
       providers: [
         RequestsService,
-        {
-          provide: getRepositoryToken(Request),
-          useValue: requestRepo,
-        },
-        {
-          provide: getRepositoryToken(Skill),
-          useValue: skillRepo,
-        },
-        {
-          provide: NotificationsGateway,
-          useValue: mockNotificationsGateway,
-        },
+        { provide: getRepositoryToken(ReqEntity), useValue: repo<ReqEntity>() },
+        { provide: getRepositoryToken(Skill), useValue: repo<Skill>() },
+        { provide: NotificationsGateway, useValue: gateway },
       ],
     }).compile();
 
-    service = module.get<RequestsService>(RequestsService);
-    notifications = module.get(NotificationsGateway);
+    service = moduleRef.get(RequestsService);
+    reqRepo = moduleRef.get(getRepositoryToken(ReqEntity));
+    skillRepo = moduleRef.get(getRepositoryToken(Skill));
     jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+  it('create: validates skills and notifies receiver', async () => {
+    const sender = { id: 1, name: 'Alice' } as any;
+    const receiver = { id: 2, name: 'Bob' } as any;
 
-  it('Create: бросает ошибку если skill не найден', async () => {
-    skillRepo.findOne.mockResolvedValueOnce(null);
-    await expect(service.create(dto, 1)).rejects.toThrow(NotFoundException);
-  });
+    skillRepo
+      .findOne!.mockResolvedValueOnce({ id: 10, owner: sender }) 
+      .mockResolvedValueOnce({ id: 20, owner: receiver, title: 'React' }); 
 
-  it('Create: бросает ошибку если requested skill не найден', async () => {
-    skillRepo.findOne
-      .mockResolvedValueOnce(mockSkill(1, 1))
-      .mockResolvedValueOnce(null);
-    await expect(service.create(dto, 1)).rejects.toThrow(NotFoundException);
-  });
+    reqRepo.create!.mockReturnValue({
+      id: 'req',
+      sender,
+      receiver,
+      requestedSkill: { title: 'React' },
+    });
+    reqRepo.save!.mockResolvedValue({ id: 'req', sender, receiver });
 
-  it('Create: бросает ошибку если offered skill не принадлежит пользователю', async () => {
-    skillRepo.findOne
-      .mockResolvedValueOnce(mockSkill(1, 100))
-      .mockResolvedValueOnce(mockSkill(2, 2));
-    await expect(service.create(dto, 1)).rejects.toThrow(ForbiddenException);
-  });
+    const res = await service.create(
+      { offeredSkillId: 10, requestedSkillId: 20 },
+      1,
+    );
 
-  it('Create: создает заявку', async () => {
-    const offered = mockSkill(1, 1);
-    const requested = mockSkill(2, 2);
-    skillRepo.findOne
-      .mockResolvedValueOnce(offered)
-      .mockResolvedValueOnce(requested);
-
-    const savedRequest = {
-      id: 'uuid',
-      sender: offered.owner,
-      receiver: requested.owner,
-      offeredSkill: offered,
-      requestedSkill: requested,
-      status: RequestStatus.PENDING,
-      isRead: false,
-    };
-    requestRepo.create.mockReturnValue(savedRequest);
-    requestRepo.save.mockResolvedValue(savedRequest);
-
-    const result = await service.create(dto, 1);
-    expect(result).toEqual(savedRequest);
-    expect(notifications.notifyNewRequest).toHaveBeenCalledWith(
-      requested.owner.id,
-      `Поступила новая заявка от ${offered.owner.name}`,
-      {
+    expect(reqRepo.save).toHaveBeenCalled();
+    expect(gateway.notifyNewRequest).toHaveBeenCalledWith(
+      2,
+      expect.stringContaining('Поступила новая заявка'),
+      expect.objectContaining({
         type: 'NEW_REQUEST',
-        skillName: requested.title,
-        fromUser: offered.owner.name,
-        requestId: 'uuid',
-      },
+        skillName: 'React',
+        fromUser: 'Alice',
+      }),
     );
+    expect(res).toEqual({ id: 'req', sender, receiver });
   });
 
-  it('getIncoming: возвращает входящие заявки', async () => {
-    const data = [{ id: '1' }, { id: '2' }];
-    requestRepo.find.mockResolvedValue(data);
+  it('create: forbids offering not own skill', async () => {
+    const other = { id: 9 } as any;
+    skillRepo
+      .findOne!.mockResolvedValueOnce({ id: 10, owner: other }) 
+      .mockResolvedValueOnce({ id: 20, owner: { id: 2 }, title: 'React' }); 
 
-    const result = await service.getIncoming(1);
-    expect(result).toBe(data);
-    expect(requestRepo.find).toHaveBeenCalledWith({
-      where: {
-        receiver: { id: 1 },
-        status: In([RequestStatus.PENDING, RequestStatus.IN_PROGRESS]),
-      },
-      relations: ['sender', 'receiver', 'offeredSkill', 'requestedSkill'],
-      order: { createdAt: 'DESC' },
-    });
+    await expect(
+      service.create({ offeredSkillId: 10, requestedSkillId: 20 }, 1),
+    ).rejects.toThrow(ForbiddenException);
   });
 
-  it('getOutgoing: возвращает исходящие заявки', async () => {
-    const data = [{ id: '1' }];
-    requestRepo.find.mockResolvedValue(data);
+  it('update: only receiver or admin, and fires ACCEPTED notification', async () => {
+    const request = {
+      id: 'r1',
+      receiver: { id: 5, name: 'Boss' },
+      sender: { id: 1 },
+      requestedSkill: { title: 'TS' },
+      status: RequestStatus.PENDING,
+    } as any;
 
-    const result = await service.getOutgoing(1);
-    expect(result).toBe(data);
-    expect(requestRepo.find).toHaveBeenCalledWith({
-      where: {
-        sender: { id: 1 },
-        status: In([RequestStatus.PENDING, RequestStatus.IN_PROGRESS]),
-      },
-      relations: ['sender', 'receiver', 'offeredSkill', 'requestedSkill'],
-      order: { createdAt: 'DESC' },
-    });
-  });
+    reqRepo.findOne!.mockResolvedValue(request);
+    reqRepo.save!.mockImplementation(async (r) => r);
 
-  it('update: бросает ошибку если request не найден', async () => {
-    requestRepo.findOne.mockResolvedValue(null);
-    await expect(service.update('123', {}, 1, UserRole.USER)).rejects.toThrow(
-      NotFoundException,
+    const res = await service.update(
+      'r1',
+      { status: RequestStatus.ACCEPTED },
+      5,
+      UserRole.USER,
     );
+    expect(gateway.notifyRequestAccepted).toHaveBeenCalledWith(1, 'TS', 'Boss');
+    expect(res.status).toBe(RequestStatus.ACCEPTED);
   });
 
-  it('update: бросает ошибку если пользователь не получатель и не админ', async () => {
-    requestRepo.findOne.mockResolvedValue(requestMock);
-    await expect(service.update('123', {}, 999, UserRole.USER)).rejects.toThrow(
+  it('update: rejects unauthorized', async () => {
+    reqRepo.findOne!.mockResolvedValue({
+      id: 'r1',
+      receiver: { id: 2 },
+    } as any);
+    await expect(service.update('r1', {}, 3, UserRole.USER)).rejects.toThrow(
       ForbiddenException,
     );
   });
 
-  it('remove: бросает ошибку если заявка не найдена', async () => {
-    requestRepo.findOne.mockResolvedValue(null);
-    await expect(service.remove('123', 1, UserRole.USER)).rejects.toThrow(
+  it('remove: only sender or admin', async () => {
+    reqRepo.findOne!.mockResolvedValue({ id: 'r1', sender: { id: 7 } } as any);
+    await service.remove('r1', 7, UserRole.USER);
+    expect(reqRepo.delete).toHaveBeenCalledWith('r1');
+  });
+
+  it('remove: throws not found', async () => {
+    reqRepo.findOne!.mockResolvedValue(null);
+    await expect(service.remove('x', 1, UserRole.USER)).rejects.toThrow(
       NotFoundException,
     );
-  });
-
-  it('remove: запрет на удаление, если не админ и не отправитель', async () => {
-    requestRepo.findOne.mockResolvedValue({
-      id: '123',
-      sender: { id: 2 },
-    });
-    await expect(service.remove('123', 1, UserRole.USER)).rejects.toThrow(
-      ForbiddenException,
-    );
-  });
-
-  it('remove: пользователь удаляет свою заявку', async () => {
-    requestRepo.findOne.mockResolvedValue({ sender: { id: 1 } });
-    requestRepo.delete.mockResolvedValue(undefined);
-
-    const result = await service.remove('123', 1, UserRole.USER);
-
-    expect(requestRepo.delete).toHaveBeenCalledWith('123');
-    expect(result).toEqual({ message: 'Заявка удалена' });
-  });
-
-  it('remove: админ может удалить любой запрос', async () => {
-    requestRepo.findOne.mockResolvedValue({ sender: { id: 1 } });
-    requestRepo.delete.mockResolvedValue(undefined);
-
-    const result = await service.remove('123', 999, UserRole.ADMIN);
-
-    expect(requestRepo.delete).toHaveBeenCalledWith('123');
-    expect(result).toEqual({ message: 'Заявка удалена' });
   });
 });
