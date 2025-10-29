@@ -1,7 +1,7 @@
 jest.setTimeout(20000);
 
 jest.mock(
-  'src/config/jwt.config',
+  '../src/config/jwt.config',
   () => ({
     jwtConfig: { KEY: 'JWT_CONFIG_TOKEN' },
   }),
@@ -10,9 +10,9 @@ jest.mock(
 
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotificationsModule } from 'src/notifications/notifications.module';
-import { NotificationsGateway } from 'src/notifications/notifications.gateway';
-import { WsJwtGuard } from 'src/notifications/guards/ws-jwt.guard';
+import { NotificationsModule } from '../src/notifications/notifications.module';
+import { NotificationsGateway } from '../src/notifications/notifications.gateway';
+import { WsJwtGuard } from '../src/notifications/guards/ws-jwt.guard';
 import { io, Socket as ClientSocket } from 'socket.io-client';
 import { AddressInfo } from 'net';
 

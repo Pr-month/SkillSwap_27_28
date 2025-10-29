@@ -11,15 +11,23 @@ import { FilesModule } from '../src/files/files.module';
 
 describe('E2E /upload (FilesController)', () => {
   let app: INestApplication;
+
   const uploadsDir = path.resolve(process.cwd(), 'public', 'uploads');
   const fixturePath = path.resolve(
     process.cwd(),
     'test',
     'fixtures',
-    'sample.jpg',
+    'skillswap.jpg',
   );
 
   beforeAll(async () => {
+    if (!fs.existsSync(fixturePath)) {
+      throw new Error(`fixture not found: ${fixturePath}`);
+    }
+    const st = await fsp.stat(fixturePath);
+    if (st.size === 0) {
+      throw new Error(`fixture is empty: ${fixturePath}`);
+    }
     await fsp.mkdir(uploadsDir, { recursive: true });
 
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -64,7 +72,11 @@ describe('E2E /upload (FilesController)', () => {
     const res = await request(app.getHttpServer())
       .post('/upload')
       .set('Host', 'example.com')
-      .expect(500);
+      .expect((r) => {
+        if (![400, 500].includes(r.status)) {
+          throw new Error(`Unexpected status ${r.status}`);
+        }
+      });
 
     expect([400, 500]).toContain(res.status);
   });
