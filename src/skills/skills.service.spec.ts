@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SkillsService } from './skills.service';
 import { Skill } from './entities/skill.entity';
 import { User } from '../users/entities/user.entity';
+import { Category } from '../categories/entities/category.entity';
 import { Repository } from 'typeorm';
 import {
   NotFoundException,
@@ -15,6 +16,7 @@ describe('SkillsService', () => {
   let service: SkillsService;
   let skillsRepo: jest.Mocked<Partial<Repository<Skill>>>;
   let usersRepo: jest.Mocked<Partial<Repository<User>>>;
+  let categoriesRepo: jest.Mocked<Partial<Repository<Category>>>;
 
   beforeEach(async () => {
     skillsRepo = {
@@ -23,9 +25,9 @@ describe('SkillsService', () => {
       create: jest.fn(),
       save: jest.fn(),
       findOneBy: jest.fn(),
+      findOne: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
-      findOne: jest.fn(),
     };
 
     usersRepo = {
@@ -34,11 +36,19 @@ describe('SkillsService', () => {
       save: jest.fn(),
     };
 
+    categoriesRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SkillsService,
         { provide: getRepositoryToken(Skill), useValue: skillsRepo },
         { provide: getRepositoryToken(User), useValue: usersRepo },
+        { provide: getRepositoryToken(Category), useValue: categoriesRepo },
       ],
     }).compile();
 
@@ -48,6 +58,7 @@ describe('SkillsService', () => {
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
+
   it('findAll: возвращает пагинацию', async () => {
     const qb: any = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -83,54 +94,83 @@ describe('SkillsService', () => {
   });
 
   it('create: создание навыка', async () => {
-    (usersRepo.findOneOrFail as jest.Mock).mockResolvedValue({ id: 10 });
+    (usersRepo.findOne as jest.Mock).mockResolvedValue({ id: 10 });
+    (categoriesRepo.findOne as jest.Mock).mockResolvedValue({
+      id: 1,
+      name: 'programming',
+    });
+
     (skillsRepo.create as jest.Mock).mockReturnValue({
       title: 'TestSkill',
       owner: { id: 10 },
+      category: { id: 1 },
     });
     (skillsRepo.save as jest.Mock).mockResolvedValue({
       id: 1,
       title: 'TestSkill',
       owner: { id: 10 },
+      category: { id: 1 },
     });
 
-    const res = await service.create({ title: 'TestSkill' } as SkillDto, 10);
+    const res = await service.create(
+      {
+        title: 'TestSkill',
+        category: 'programming',
+      } as SkillDto,
+      10,
+    );
+
     expect(res).toMatchObject({ id: 1, title: 'TestSkill', owner: { id: 10 } });
-    expect(usersRepo.findOneOrFail).toHaveBeenCalledWith({ where: { id: 10 } });
+    expect(usersRepo.findOne).toHaveBeenCalledWith({ where: { id: 10 } });
   });
 
   it('update: обновление навыка', async () => {
-    (skillsRepo.findOneBy as jest.Mock)
-      .mockResolvedValueOnce({ id: 1, owner: { id: 5 } }) // загрузка перед проверкой прав
-      .mockResolvedValueOnce({ id: 1, title: 'TestSkill', owner: { id: 5 } }); // повторная загрузка после update
-    (skillsRepo.update as jest.Mock).mockResolvedValue({} as any);
+    (skillsRepo.findOne as jest.Mock)
+      .mockResolvedValueOnce({
+        id: 1,
+        title: 'Old Skill',
+        owner: { id: 5 },
+        category: { id: 1, name: 'programming' },
+      })
+      .mockResolvedValueOnce({
+        id: 1,
+        title: 'TestSkill',
+        owner: { id: 5 },
+        category: { id: 1, name: 'programming' },
+      });
+
+    (skillsRepo.save as jest.Mock).mockResolvedValue({} as any);
 
     const res = await service.update(1, { title: 'TestSkill' } as SkillDto, 5);
-    expect(skillsRepo.update).toHaveBeenCalledWith(1, { title: 'TestSkill' });
+    expect(skillsRepo.save).toHaveBeenCalled();
     expect(res).toMatchObject({ id: 1, title: 'TestSkill' });
   });
 
   it('update: запрет обновления если User не владелец навыка', async () => {
-    (skillsRepo.findOneBy as jest.Mock).mockResolvedValue({
+    (skillsRepo.findOne as jest.Mock).mockResolvedValue({
       id: 1,
+      title: 'Test Skill',
       owner: { id: 99 },
+      category: { id: 1, name: 'programming' },
     });
+
     await expect(
       service.update(1, { title: 'TestSkill' } as SkillDto, 5),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('update: NotFound если навык отсутствует', async () => {
-    (skillsRepo.findOneBy as jest.Mock).mockResolvedValue(null);
+    (skillsRepo.findOne as jest.Mock).mockResolvedValue(null);
     await expect(
       service.update(1, { title: 'TestSkill' } as SkillDto, 5),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('remove: удаляет навык владельца', async () => {
-    (skillsRepo.findOneBy as jest.Mock).mockResolvedValue({
+    (skillsRepo.findOne as jest.Mock).mockResolvedValue({
       id: 1,
       owner: { id: 5 },
+      category: { id: 1, name: 'programming' },
     });
     (skillsRepo.delete as jest.Mock).mockResolvedValue({} as SkillDto);
 
@@ -140,17 +180,19 @@ describe('SkillsService', () => {
   });
 
   it('remove: запрет удаления для чужого навыка', async () => {
-    (skillsRepo.findOneBy as jest.Mock).mockResolvedValue({
+    (skillsRepo.findOne as jest.Mock).mockResolvedValue({
       id: 1,
       owner: { id: 7 },
+      category: { id: 1, name: 'programming' },
     });
+
     await expect(service.remove(1, 5)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
   });
 
   it('remove: NotFound если навык отсутствует', async () => {
-    (skillsRepo.findOneBy as jest.Mock).mockResolvedValue(null);
+    (skillsRepo.findOne as jest.Mock).mockResolvedValue(null);
     await expect(service.remove(1, 5)).rejects.toBeInstanceOf(
       NotFoundException,
     );
