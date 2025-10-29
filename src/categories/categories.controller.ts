@@ -11,7 +11,7 @@ import {
 import { CategoriesService } from './categories.service';
 import { CategoryDto } from './dto/category.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../../src/users/users.enums';
+import { UserRole } from '../users/users.enums';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import {

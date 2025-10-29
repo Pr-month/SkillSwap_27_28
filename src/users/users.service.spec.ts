@@ -37,7 +37,7 @@ import * as bcryptjs from 'bcrypt';
 
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
-import { Skill } from 'src/skills/entities/skill.entity';
+import { Skill } from '../skills/entities/skill.entity';
 import { UserRole } from './users.enums';
 
 type DeepPartial<T> = {
