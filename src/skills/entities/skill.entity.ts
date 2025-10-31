@@ -14,6 +14,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Category } from '../../categories/entities/category.entity';
 
 @Entity()
 export class Skill {
@@ -21,9 +22,9 @@ export class Skill {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ApiProperty({ 
-    description: 'Название навыка', 
-    example: 'JavaScript программирование'
+  @ApiProperty({
+    description: 'Название навыка',
+    example: 'JavaScript программирование',
   })
   @Column()
   @IsNotEmpty({ message: 'Название навыка обязательно' })
@@ -32,24 +33,27 @@ export class Skill {
   })
   title: string;
 
-   @ApiPropertyOptional({ 
-    description: 'Описание навыка', 
-    example: 'Разработка на JavaScript и TypeScript'
+  @ApiPropertyOptional({
+    description: 'Описание навыка',
+    example: 'Разработка на JavaScript и TypeScript',
   })
   @Column('text')
   @IsOptional()
   @Length(0, 1000, { message: 'Описание не должно превышать 1000 символов' })
   description: string;
 
-  // @ManyToOne(() => Category, { eager: true })
-  // @JoinColumn()
-  // @IsNotEmpty({ message: 'Категория обязательна' })
-  // category: Category;
+  @ManyToOne(() => Category, { eager: true })
+  @JoinColumn()
+  @IsNotEmpty({ message: 'Категория обязательна' })
+  category: Category;
 
-  @ApiPropertyOptional({ 
-    description: 'Массив ссылок на изображения', 
-    example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg'],
-    type: [String]
+  @ApiPropertyOptional({
+    description: 'Массив ссылок на изображения',
+    example: [
+      'https://example.com/image1.jpg',
+      'https://example.com/image2.jpg',
+    ],
+    type: [String],
   })
   @Column('simple-array', { nullable: true })
   @IsOptional()
@@ -57,9 +61,9 @@ export class Skill {
   @IsUrl({}, { each: true, message: 'Каждая ссылка должна быть валидным URL' })
   images: string[];
 
-   @ApiProperty({ 
+  @ApiProperty({
     description: 'Владелец навыка',
-    type: () => User
+    type: () => User,
   })
   @ManyToOne(() => User, (user) => user.skills, {
     onDelete: 'CASCADE',

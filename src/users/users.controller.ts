@@ -9,7 +9,6 @@ import {
   HttpCode,
   HttpStatus,
   Body,
-  Req,
   Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -28,16 +27,18 @@ import {
   ApiBody,
   ApiUnauthorizedResponse,
   ApiForbiddenResponse,
+  ApiParam,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 
 @ApiTags('Users')
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Получить список пользователей' })
+  @ApiResponse({ status: 200, description: 'OK', type: [User] })
   // async findAll(): Promise<User[]> {
   //   return this.usersService.findAll();
   // }
@@ -63,8 +64,8 @@ export class UsersController {
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({ status: 200, description: 'Обновлено', type: User })
   @ApiUnauthorizedResponse({ description: 'Нужен действующий access token' })
-  updateCurrentUser(@Req() req, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(req.user.userId, updateUserDto);
+  updateCurrentUser(@Request() req: AuthRequest, @Body() dto: UpdateUserDto) {
+    return this.usersService.update(req.user._id, dto);
   }
 
   // @Patch(':id')
@@ -72,6 +73,17 @@ export class UsersController {
   //   return this.usersService.update(+id, updateUserDto);
   // }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Получить пользователя по ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Пользователь найден',
+    type: User 
+  })
+  @ApiResponse({ 
+  status: 404, 
+  description: 'Пользователь не найден' 
+  })
   async findOne(@Param('id') id: string): Promise<User> {
     return this.usersService.findOne(+id);
   }
@@ -94,6 +106,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Удалить пользователя (только админ)' })
   @ApiResponse({ status: 200, description: 'Удалён' })
@@ -103,7 +116,28 @@ export class UsersController {
   }
 
   @Get('by-skill/:id')
-  async findBySkill(@Param('id') skillId: string): Promise<User[]> {
-    return this.usersService.findBySkill(+skillId);
+  @ApiOperation({
+    summary: 'Получить пользователей, у которых навык в избранном',
+    description:
+      'Возвращает список пользователей, которые добавили указанный навык в избранное',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID карточки навыка',
+    type: Number,
+    example: 123,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Список пользователей, у которых навык в избранном',
+    type: [User],
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Навык не найден',
+  })
+  @ApiNotFoundResponse({ description: 'Навык не найден' })
+  async findBySkill(@Param('id') skillId: number): Promise<User[]> {
+    return this.usersService.findBySkill(skillId);
   }
 }

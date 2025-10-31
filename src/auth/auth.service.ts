@@ -94,7 +94,10 @@ export class AuthService {
       return {
         message: 'Пользователь успешно зарегистрирован',
         user: userWithoutSensitiveData,
-        tokens,
+        tokens: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        },
       };
     } catch (error) {
       console.log(error);
@@ -154,7 +157,10 @@ export class AuthService {
     return {
       message: 'Вход выполнен',
       user: userWithoutSensitiveData,
-      ...tokens,
+      tokens: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
     };
   }
 
@@ -200,8 +206,10 @@ export class AuthService {
 
     return {
       message: 'Токены обновлены',
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
+      tokens: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
     };
   }
 }

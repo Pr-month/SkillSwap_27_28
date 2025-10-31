@@ -25,6 +25,13 @@ const authServiceMock = {
 describe('AuthController (unit)', () => {
   let controller: AuthController;
 
+  const serviceMock = {
+    register: jest.fn(),
+    login: jest.fn(),
+    logout: jest.fn(),
+    refreshTokens: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
@@ -35,8 +42,22 @@ describe('AuthController (unit)', () => {
     jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  it('refresh delegates', async () => {
+    const req: any = { user: { userId: 2 } };
+
+    serviceMock.refreshTokens.mockResolvedValueOnce({
+      message: 'Токены обновлены',
+      accessToken: 'a2',
+      refreshToken: 'r2',
+    });
+
+    await expect(controller.refresh(req)).resolves.toEqual({
+      message: 'Токены обновлены',
+      accessToken: 'a2',
+      refreshToken: 'r2',
+    });
+
+    expect(serviceMock.refreshTokens).toHaveBeenCalledWith(2);
   });
 
   it('register: вызывает сервис и возвращает результат', async () => {
