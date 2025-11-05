@@ -4,12 +4,17 @@ import * as bcrypt from 'bcrypt';
 import { SeedUsers } from './seed-users.data';
 import { Category } from '../categories/entities/category.entity';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { UserRole } from '../users/users.enums';
 async function seedUsers() {
   await AppDataSource.initialize();
   const userRepository = AppDataSource.getRepository(User);
   const categoryRepository = AppDataSource.getRepository(Category);
 
-  const existingUsers = await userRepository.count();
+  const existingUsers = await userRepository.count({
+    where: {
+      role: UserRole.USER,
+    },
+  });
   const wantToCategory = await categoryRepository.find({ take: 2 });
 
   if (existingUsers > 0) {

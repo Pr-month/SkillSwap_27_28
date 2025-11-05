@@ -5,10 +5,6 @@ import { User } from '../users/entities/user.entity';
 import { Not } from 'typeorm';
 import { UserRole } from '../users/users.enums';
 
-function getRandomUser(): number {
-  return Math.floor(Math.random() * 2);
-}
-
 async function seedSkills() {
   await AppDataSource.initialize();
   const skillsRepo = AppDataSource.getRepository(Skill);
@@ -27,10 +23,13 @@ async function seedSkills() {
     await AppDataSource.destroy();
     return;
   }
-
+  let toggle: 0 | 1 = 0;
   for (const skill of SkillsData) {
-    const randomOwner = getRandomUser();
-    await skillsRepo.save({ ...skill, owner: users[randomOwner] }); // Случайный Owner 1 из 2х пользователей
+    function getOneSkill(): 0 | 1 {
+      toggle = (1 - toggle) as 0 | 1;
+      return toggle;
+    }
+    await skillsRepo.save({ ...skill, owner: users[getOneSkill()] }); // Чередуется Owner: 1 из 2х пользователей
   }
   console.log('✅ Сид успешен!');
   await AppDataSource.destroy();
