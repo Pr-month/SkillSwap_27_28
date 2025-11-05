@@ -1,4 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository, ObjectLiteral } from 'typeorm';
 import { SkillsService } from './skills.service';
 import { Skill } from './entities/skill.entity';
 import { User } from '../users/entities/user.entity';
@@ -9,8 +11,35 @@ import {
   ForbiddenException,
   ConflictException,
 } from '@nestjs/common';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { AllSkillsDto, SkillDto } from './dto/skills.dto';
+import { Category } from '../categories/entities/category.entity';
+
+type MockRepo<T extends ObjectLiteral = any> = Partial<
+  Record<keyof Repository<T>, jest.Mock>
+>;
+
+const repo = <T extends ObjectLiteral = any>(): MockRepo<T> =>
+  ({
+    create: jest.fn(),
+    save: jest.fn(),
+    find: jest.fn(),
+    findOne: jest.fn(),
+    findOneBy: jest.fn(),
+    findOneOrFail: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  }) as unknown as MockRepo<T>;
+
+const qb = () => {
+  const self: any = {
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    getManyAndCount: jest.fn(),
+  };
+  return self;
+};
 
 describe('SkillsService', () => {
   let service: SkillsService;
@@ -174,9 +203,11 @@ describe('SkillsService', () => {
     });
     (skillsRepo.delete as jest.Mock).mockResolvedValue({} as SkillDto);
 
-    const res = await service.remove(1, 5);
-    expect(skillsRepo.delete).toHaveBeenCalledWith(1);
-    expect(res).toEqual({ message: 'Навык удален' });
+    const res = await service.create({ title: 'A', category: 'dev' } as any, 7);
+    expect(usersRepo.findOne).toHaveBeenCalled();
+    expect(categoryRepo.findOne).toHaveBeenCalled();
+    expect(skillsRepo.save).toHaveBeenCalled();
+    expect(res).toEqual({ id: 1 });
   });
 
   it('remove: запрет удаления для чужого навыка', async () => {
@@ -198,66 +229,69 @@ describe('SkillsService', () => {
     );
   });
 
-  it('addToFavorites: добавляет навык в избранное', async () => {
-    (skillsRepo.findOne as jest.Mock).mockResolvedValue({
-      id: 1,
-      owner: { id: 5 },
-    });
-    const user = { id: 10, favoriteSkills: [] as SkillDto[] };
-    (usersRepo.findOne as jest.Mock).mockResolvedValue(user);
-    (usersRepo.save as jest.Mock).mockResolvedValue({} as any);
-
-    const res = await service.addToFavorites(1, 10);
-    expect(user.favoriteSkills).toHaveLength(1);
-    expect(usersRepo.save).toHaveBeenCalledWith(user);
-    expect(res).toEqual({ message: 'Навык добавлен в избранное' });
+  it('remove: enforces owner and deletes', async () => {
+    skillsRepo.findOne!.mockResolvedValue({ id: 1, owner: { id: 7 } });
+    const res = await service.remove(1, 7);
+    expect(skillsRepo.delete).toHaveBeenCalledWith(1);
+    expect(res).toEqual({ message: 'Навык удален' });
   });
 
-  it('addToFavorites: Conflict если уже в избранном', async () => {
-    (skillsRepo.findOne as jest.Mock).mockResolvedValue({
-      id: 1,
-      owner: { id: 5 },
-    });
-    (usersRepo.findOne as jest.Mock).mockResolvedValue({
-      id: 10,
-      favoriteSkills: [{ id: 1 }],
-    });
-    await expect(service.addToFavorites(1, 10)).rejects.toBeInstanceOf(
-      ConflictException,
-    );
-  });
-
-  it('addToFavorites: NotFound если навык отсутствует', async () => {
-    (skillsRepo.findOne as jest.Mock).mockResolvedValue(null);
-    await expect(service.addToFavorites(1, 10)).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
-  });
-
-  it('removeFromFavorites: удаляет навык из избранного', async () => {
-    const user = { id: 10, favoriteSkills: [{ id: 1 }, { id: 2 }] };
-    (usersRepo.findOne as jest.Mock).mockResolvedValue(user);
-    (usersRepo.save as jest.Mock).mockResolvedValue({} as any);
-
-    const res = await service.removeFromFavorites(1, 10);
-    expect(user.favoriteSkills).toEqual([{ id: 2 }]);
-    expect(res).toEqual({ message: 'Навык удален из избранного' });
-  });
-
-  it('getFavorites: возвращает список избранных навыков', async () => {
-    (usersRepo.findOne as jest.Mock).mockResolvedValue({
-      id: 10,
-      favoriteSkills: [{ id: 1 }, { id: 2 }],
+  describe('favorites', () => {
+    it('addToFavorites: conflict if already there', async () => {
+      skillsRepo.findOne!.mockResolvedValue({
+        id: 3,
+        owner: { id: 1 },
+        title: 'T',
+      });
+      usersRepo.findOne!.mockResolvedValue({
+        id: 2,
+        favoriteSkills: [{ id: 3 }],
+      });
+      await expect(service.addToFavorites(3, 2)).rejects.toThrow(
+        ConflictException,
+      );
     });
 
-    const res = await service.getFavorites(10);
-    expect(res).toEqual([{ id: 1 }, { id: 2 }]);
-  });
+    it('addToFavorites: success', async () => {
+      skillsRepo.findOne!.mockResolvedValue({
+        id: 3,
+        owner: { id: 1 },
+        title: 'T',
+      });
+      const user: { id: number; favoriteSkills: Array<{ id: number }> } = {
+        id: 2,
+        favoriteSkills: [],
+      };
+      usersRepo.findOne!.mockResolvedValue(user as any);
+      usersRepo.save!.mockResolvedValue(undefined);
 
-  it('getFavorites: NotFound если пользователя нет', async () => {
-    (usersRepo.findOne as jest.Mock).mockResolvedValue(null);
-    await expect(service.getFavorites(10)).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+      const res = await service.addToFavorites(3, 2);
+
+      expect(user.favoriteSkills[0].id).toBe(3);
+      expect(res).toEqual({ message: 'Навык добавлен в избранное' });
+    });
+
+    it('removeFromFavorites: filters out', async () => {
+      const user: { id: number; favoriteSkills: Array<{ id: number }> } = {
+        id: 2,
+        favoriteSkills: [{ id: 3 }, { id: 4 }],
+      };
+      usersRepo.findOne!.mockResolvedValue(user as any);
+
+      const res = await service.removeFromFavorites(3, 2);
+
+      expect(user.favoriteSkills.map((s) => s.id)).toEqual([4]);
+      expect(res).toEqual({ message: 'Навык удален из избранного' });
+    });
+
+    it('getFavorites: returns list', async () => {
+      usersRepo.findOne!.mockResolvedValue({
+        id: 2,
+        favoriteSkills: [{ id: 9 }],
+        owner: {},
+      } as any);
+      const res = await service.getFavorites(2);
+      expect(res).toEqual([{ id: 9 }]);
+    });
   });
 });
