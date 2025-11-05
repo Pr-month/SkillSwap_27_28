@@ -4,6 +4,8 @@ import { Repository, ObjectLiteral } from 'typeorm';
 import { SkillsService } from './skills.service';
 import { Skill } from './entities/skill.entity';
 import { User } from '../users/entities/user.entity';
+import { Category } from '../categories/entities/category.entity';
+import { Repository } from 'typeorm';
 import {
   NotFoundException,
   ForbiddenException,
@@ -41,60 +43,165 @@ const qb = () => {
 
 describe('SkillsService', () => {
   let service: SkillsService;
-  let skillsRepo: MockRepo<Skill>;
-  let usersRepo: MockRepo<User>;
-  let categoryRepo: MockRepo<Category>;
+  let skillsRepo: jest.Mocked<Partial<Repository<Skill>>>;
+  let usersRepo: jest.Mocked<Partial<Repository<User>>>;
+  let categoriesRepo: jest.Mocked<Partial<Repository<Category>>>;
+
   beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
+    skillsRepo = {
+      createQueryBuilder: jest.fn(),
+      findOneOrFail: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      findOneBy: jest.fn(),
+      findOne: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+
+    usersRepo = {
+      findOneOrFail: jest.fn(),
+      findOne: jest.fn(),
+      save: jest.fn(),
+    };
+
+    categoriesRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         SkillsService,
-        { provide: getRepositoryToken(Skill), useValue: repo<Skill>() },
-        { provide: getRepositoryToken(User), useValue: repo<User>() },
-        { provide: getRepositoryToken(Category), useValue: repo<Category>() }
+        { provide: getRepositoryToken(Skill), useValue: skillsRepo },
+        { provide: getRepositoryToken(User), useValue: usersRepo },
+        { provide: getRepositoryToken(Category), useValue: categoriesRepo },
       ],
     }).compile();
 
-    service = moduleRef.get(SkillsService);
-    skillsRepo = moduleRef.get(getRepositoryToken(Skill));
-    usersRepo = moduleRef.get(getRepositoryToken(User));
-    categoryRepo = moduleRef.get(getRepositoryToken(Category))
-    jest.clearAllMocks();
+    service = module.get<SkillsService>(SkillsService);
   });
 
-  describe('findAll', () => {
-    it('returns paged list and applies search/category', async () => {
-      const query = qb();
-      (skillsRepo.createQueryBuilder as any).mockReturnValue(query);
-      query.getManyAndCount.mockResolvedValue([[{ id: 1 }], 1]);
-
-      const res = await service.findAll({
-        page: 1,
-        limit: 20,
-        search: 'ts',
-        category: 'dev',
-      } as any);
-
-      expect(skillsRepo.createQueryBuilder).toHaveBeenCalledWith('skill');
-      expect(query.andWhere).toHaveBeenCalled();
-      expect(res).toEqual({ data: [{ id: 1 }], page: 1, totalPages: 1 });
-    });
-
-    it('throws NotFound when page out of bounds', async () => {
-      const query = qb();
-      (skillsRepo.createQueryBuilder as any).mockReturnValue(query);
-      query.getManyAndCount.mockResolvedValue([[], 0]);
-
-      await expect(
-        service.findAll({ page: 2, limit: 10, search: '' } as any),
-      ).rejects.toThrow(NotFoundException);
-    });
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
-  it('create: creates with owner', async () => {
-    usersRepo.findOne!.mockResolvedValue({ id: 7 });
-    categoryRepo.findOne!.mockResolvedValue({ id: 1 });
-    skillsRepo.create!.mockReturnValue({ title: 'A', owner: { id: 7 } });
-    skillsRepo.save!.mockResolvedValue({ id: 1 });
+  it('findAll: возвращает пагинацию', async () => {
+    const qb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([[{ id: 1 }], 1]),
+    };
+    (skillsRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+    const res = await service.findAll({
+      page: 1,
+      limit: 20,
+      search: '',
+      category: undefined,
+    } as AllSkillsDto);
+    expect(res).toEqual({ data: [{ id: 1 }], page: 1, totalPages: 1 });
+  });
+
+  it('findAll: NotFound на несуществующей странице', async () => {
+    const qb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+    };
+    (skillsRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+    await expect(
+      service.findAll({ page: 2, limit: 20, search: '' } as AllSkillsDto),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('create: создание навыка', async () => {
+    (usersRepo.findOne as jest.Mock).mockResolvedValue({ id: 10 });
+    (categoriesRepo.findOne as jest.Mock).mockResolvedValue({
+      id: 1,
+      name: 'programming',
+    });
+
+    (skillsRepo.create as jest.Mock).mockReturnValue({
+      title: 'TestSkill',
+      owner: { id: 10 },
+      category: { id: 1 },
+    });
+    (skillsRepo.save as jest.Mock).mockResolvedValue({
+      id: 1,
+      title: 'TestSkill',
+      owner: { id: 10 },
+      category: { id: 1 },
+    });
+
+    const res = await service.create(
+      {
+        title: 'TestSkill',
+        category: 'programming',
+      } as SkillDto,
+      10,
+    );
+
+    expect(res).toMatchObject({ id: 1, title: 'TestSkill', owner: { id: 10 } });
+    expect(usersRepo.findOne).toHaveBeenCalledWith({ where: { id: 10 } });
+  });
+
+  it('update: обновление навыка', async () => {
+    (skillsRepo.findOne as jest.Mock)
+      .mockResolvedValueOnce({
+        id: 1,
+        title: 'Old Skill',
+        owner: { id: 5 },
+        category: { id: 1, name: 'programming' },
+      })
+      .mockResolvedValueOnce({
+        id: 1,
+        title: 'TestSkill',
+        owner: { id: 5 },
+        category: { id: 1, name: 'programming' },
+      });
+
+    (skillsRepo.save as jest.Mock).mockResolvedValue({} as any);
+
+    const res = await service.update(1, { title: 'TestSkill' } as SkillDto, 5);
+    expect(skillsRepo.save).toHaveBeenCalled();
+    expect(res).toMatchObject({ id: 1, title: 'TestSkill' });
+  });
+
+  it('update: запрет обновления если User не владелец навыка', async () => {
+    (skillsRepo.findOne as jest.Mock).mockResolvedValue({
+      id: 1,
+      title: 'Test Skill',
+      owner: { id: 99 },
+      category: { id: 1, name: 'programming' },
+    });
+
+    await expect(
+      service.update(1, { title: 'TestSkill' } as SkillDto, 5),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('update: NotFound если навык отсутствует', async () => {
+    (skillsRepo.findOne as jest.Mock).mockResolvedValue(null);
+    await expect(
+      service.update(1, { title: 'TestSkill' } as SkillDto, 5),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('remove: удаляет навык владельца', async () => {
+    (skillsRepo.findOne as jest.Mock).mockResolvedValue({
+      id: 1,
+      owner: { id: 5 },
+      category: { id: 1, name: 'programming' },
+    });
+    (skillsRepo.delete as jest.Mock).mockResolvedValue({} as SkillDto);
 
     const res = await service.create({ title: 'A', category: 'dev' } as any, 7);
     expect(usersRepo.findOne).toHaveBeenCalled();
@@ -103,22 +210,23 @@ describe('SkillsService', () => {
     expect(res).toEqual({ id: 1 });
   });
 
-  it('update: throws when not owner', async () => {
-    skillsRepo.findOne!.mockResolvedValue({ id: 1, owner: { id: 2 } });
-    await expect(service.update(1, { title: 'x' } as any, 7)).rejects.toThrow(
+  it('remove: запрет удаления для чужого навыка', async () => {
+    (skillsRepo.findOne as jest.Mock).mockResolvedValue({
+      id: 1,
+      owner: { id: 7 },
+      category: { id: 1, name: 'programming' },
+    });
+
+    await expect(service.remove(1, 5)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
   });
 
-  it('update: happy path', async () => {
-    skillsRepo.findOne!
-      .mockResolvedValueOnce({ id: 1, owner: { id: 7 } }) // первый вызов — проверка владельца
-      .mockResolvedValueOnce({ id: 1, title: 'x' }); // второй вызов — возврат обновленного
-    categoryRepo.findOne!.mockResolvedValue(undefined); // категория не указана
-    skillsRepo.save!.mockResolvedValue(undefined);
-
-    const res = await service.update(1, { title: 'x' } as any, 7);
-    expect(res).toEqual({ id: 1, title: 'x' });
+  it('remove: NotFound если навык отсутствует', async () => {
+    (skillsRepo.findOne as jest.Mock).mockResolvedValue(null);
+    await expect(service.remove(1, 5)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('remove: enforces owner and deletes', async () => {
