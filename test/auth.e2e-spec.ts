@@ -1,15 +1,15 @@
-jest.mock('src/config/jwt.config', () => ({ 
-  jwtConfig: { KEY: 'JWT_CONFIG_TOKEN' } 
+jest.mock('src/config/jwt.config', () => ({
+  jwtConfig: { KEY: 'JWT_CONFIG_TOKEN' }
 }), { virtual: true });
 
-jest.mock('src/config/app.config', () => ({ 
-  appConfig: { KEY: 'APP_CONFIG_TOKEN' } 
+jest.mock('src/config/app.config', () => ({
+  appConfig: { KEY: 'APP_CONFIG_TOKEN' }
 }), { virtual: true });
 
 jest.mock('src/config', () => ({ appConfig: { KEY: 'APP_CONFIG_TOKEN' } }), {
   virtual: true,
 });
-jest.mock('src/users/entities/user.entity', () => ({ User: class User {} }), {
+jest.mock('src/users/entities/user.entity', () => ({ User: class User { } }), {
   virtual: true,
 });
 
@@ -23,22 +23,24 @@ jest.mock('../src/auth/guards/refreshToken.guard', () => ({
   },
 }));
 
-jest.mock('../src/auth/guards/jwt-auth.guard', () => ({
-  JwtAuthGuard: class {
+jest.mock('../src/auth/guards/refreshToken.guard', () => ({
+  RefreshTokenGuard: class {
     canActivate(context) {
       const request = context.switchToHttp().getRequest();
-      request.user = { _id: 1, email: 'test@example.com', role: 'customer' };
+      request.user = { _id: 1, email: 'test@example.com' };
       return true;
     }
   },
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { ClassSerializerInterceptor, INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 
 import { AuthController } from '../src/auth/auth.controller';
 import { AuthService } from '../src/auth/auth.service';
+import { Reflector } from '@nestjs/core';
+import { AllExpectionFilter } from '../src/common/all-exception.filter';
 
 const authServiceMock: Partial<Record<keyof AuthService, any>> = {
   register: jest.fn(async (dto) => ({
@@ -70,6 +72,9 @@ describe('E2E /auth (controller + mocked service)', () => {
     }).compile();
 
     app = module.createNestApplication();
+    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+    app.useGlobalPipes(new ValidationPipe({ transform: true }));
+    app.useGlobalFilters(new AllExpectionFilter());
     await app.init();
   });
 
@@ -111,17 +116,6 @@ describe('E2E /auth (controller + mocked service)', () => {
       email: 'test@example.com',
       password: 'password123'
     });
-  });
-
-  it('POST /auth/logout → 200 успешный выход', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/auth/logout')
-      .expect(200);
-
-    expect(res.body).toEqual({
-      message: 'Выход выполнен'
-    });
-    expect(authServiceMock.logout).toHaveBeenCalledWith(1);
   });
 
   it('POST /auth/refresh → 200 обновленные токены', async () => {

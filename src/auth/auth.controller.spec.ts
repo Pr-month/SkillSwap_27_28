@@ -2,50 +2,72 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
-describe('AuthController', () => {
-  let controller: AuthController;
+const authServiceMock = {
+  register: jest.fn().mockResolvedValue({
+    message: 'Пользователь успешно зарегистрирован',
+    tokens: { accessToken: 'mock-access', refreshToken: 'mock-refresh' },
+    user: { id: 1, name: 'Test', email: 'test@example.com' },
+  }),
+  login: jest.fn().mockResolvedValue({
+    message: 'Вход выполнен',
+    tokens: { accessToken: 'mock-access', refreshToken: 'mock-refresh' },
+    user: { id: 1, email: 'test@example.com', name: 'Test User' },
+  }),
+  logout: jest.fn().mockResolvedValue({ message: 'Выход выполнен' }),
+  refreshTokens: jest.fn().mockResolvedValue({
+    message: 'Токены обновлены',
+    tokens: { accessToken: 'new-access', refreshToken: 'new-refresh' },
+  }),
+};
 
-  const serviceMock = {
-    register: jest.fn(),
-    login: jest.fn(),
-    logout: jest.fn(),
-    refreshTokens: jest.fn(),
-  };
+describe('AuthController (unit)', () => {
+  let controller: AuthController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [{ provide: AuthService, useValue: serviceMock }],
+      providers: [{ provide: AuthService, useValue: authServiceMock }],
     }).compile();
 
-    controller = module.get<AuthController>(AuthController);
+    controller = module.get(AuthController);
     jest.clearAllMocks();
   });
 
-  it('logout delegates', async () => {
-    const req: any = { user: { userId: 4 } };
-
-    serviceMock.logout.mockResolvedValueOnce({ message: 'ok' });
-
-    await expect(controller.logout(req)).resolves.toEqual({ message: 'ok' });
-    expect(serviceMock.logout).toHaveBeenCalledWith(4);
+  it('register: вызывает сервис и возвращает результат', async () => {
+    const dto = {
+      name: 'Test',
+      email: 'test@example.com',
+      password: 'password123',
+      city: 'Moscow',
+    };
+    const res = await controller.register(dto as any);
+    expect(authServiceMock.register).toHaveBeenCalledWith(dto);
+    expect(res).toMatchObject({
+      message: 'Пользователь успешно зарегистрирован',
+    });
   });
 
-  it('refresh delegates', async () => {
-    const req: any = { user: { userId: 2 } };
+  it('login: вызывает сервис и возвращает результат', async () => {
+    const dto = { email: 'test@example.com', password: 'password123' };
+    const res = await controller.login(dto as any);
+    expect(authServiceMock.login).toHaveBeenCalledWith(dto);
+    expect(res).toMatchObject({ message: 'Вход выполнен' });
+  });
 
-    serviceMock.refreshTokens.mockResolvedValueOnce({
+  it('refresh: вызывает сервис с _id из запроса', async () => {
+    const mockReq = { user: { _id: 1 } } as any;
+    const res = await controller.refresh(mockReq);
+    expect(authServiceMock.refreshTokens).toHaveBeenCalledWith(1);
+    expect(res).toMatchObject({
       message: 'Токены обновлены',
-      accessToken: 'a2',
-      refreshToken: 'r2',
+      tokens: { accessToken: 'new-access', refreshToken: 'new-refresh' },
     });
+  });
 
-    await expect(controller.refresh(req)).resolves.toEqual({
-      message: 'Токены обновлены',
-      accessToken: 'a2',
-      refreshToken: 'r2',
-    });
-
-    expect(serviceMock.refreshTokens).toHaveBeenCalledWith(2);
+  it('logout: вызывает сервис с _id из запроса', async () => {
+    const mockReq = { user: { _id: 1 } } as any;
+    const res = await controller.logout(mockReq);
+    expect(authServiceMock.logout).toHaveBeenCalledWith(1);
+    expect(res).toMatchObject({ message: 'Выход выполнен' });
   });
 });

@@ -9,6 +9,7 @@ import {
   ForbiddenException,
   ConflictException,
 } from '@nestjs/common';
+import { Category } from '../categories/entities/category.entity';
 
 type MockRepo<T extends ObjectLiteral = any> = Partial<
   Record<keyof Repository<T>, jest.Mock>
@@ -42,20 +43,21 @@ describe('SkillsService', () => {
   let service: SkillsService;
   let skillsRepo: MockRepo<Skill>;
   let usersRepo: MockRepo<User>;
-
+  let categoryRepo: MockRepo<Category>;
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         SkillsService,
         { provide: getRepositoryToken(Skill), useValue: repo<Skill>() },
         { provide: getRepositoryToken(User), useValue: repo<User>() },
+        { provide: getRepositoryToken(Category), useValue: repo<Category>() }
       ],
     }).compile();
 
     service = moduleRef.get(SkillsService);
     skillsRepo = moduleRef.get(getRepositoryToken(Skill));
     usersRepo = moduleRef.get(getRepositoryToken(User));
-
+    categoryRepo = moduleRef.get(getRepositoryToken(Category))
     jest.clearAllMocks();
   });
 
@@ -89,35 +91,38 @@ describe('SkillsService', () => {
   });
 
   it('create: creates with owner', async () => {
-    usersRepo.findOneOrFail!.mockResolvedValue({ id: 7 });
+    usersRepo.findOne!.mockResolvedValue({ id: 7 });
+    categoryRepo.findOne!.mockResolvedValue({ id: 1 });
     skillsRepo.create!.mockReturnValue({ title: 'A', owner: { id: 7 } });
     skillsRepo.save!.mockResolvedValue({ id: 1 });
 
-    const res = await service.create({ title: 'A' } as any, 7);
-    expect(usersRepo.findOneOrFail).toHaveBeenCalled();
+    const res = await service.create({ title: 'A', category: 'dev' } as any, 7);
+    expect(usersRepo.findOne).toHaveBeenCalled();
+    expect(categoryRepo.findOne).toHaveBeenCalled();
     expect(skillsRepo.save).toHaveBeenCalled();
     expect(res).toEqual({ id: 1 });
   });
 
   it('update: throws when not owner', async () => {
-    skillsRepo.findOneBy!.mockResolvedValue({ id: 1, owner: { id: 2 } });
+    skillsRepo.findOne!.mockResolvedValue({ id: 1, owner: { id: 2 } });
     await expect(service.update(1, { title: 'x' } as any, 7)).rejects.toThrow(
       ForbiddenException,
     );
   });
 
   it('update: happy path', async () => {
-    (skillsRepo.findOneBy as any)
-      .mockResolvedValueOnce({ id: 1, owner: { id: 7 } })
-      .mockResolvedValueOnce({ id: 1, title: 'x' });
-    skillsRepo.update!.mockResolvedValue(undefined);
+    skillsRepo.findOne!
+      .mockResolvedValueOnce({ id: 1, owner: { id: 7 } }) // первый вызов — проверка владельца
+      .mockResolvedValueOnce({ id: 1, title: 'x' }); // второй вызов — возврат обновленного
+    categoryRepo.findOne!.mockResolvedValue(undefined); // категория не указана
+    skillsRepo.save!.mockResolvedValue(undefined);
 
     const res = await service.update(1, { title: 'x' } as any, 7);
     expect(res).toEqual({ id: 1, title: 'x' });
   });
 
   it('remove: enforces owner and deletes', async () => {
-    skillsRepo.findOneBy!.mockResolvedValue({ id: 1, owner: { id: 7 } });
+    skillsRepo.findOne!.mockResolvedValue({ id: 1, owner: { id: 7 } });
     const res = await service.remove(1, 7);
     expect(skillsRepo.delete).toHaveBeenCalledWith(1);
     expect(res).toEqual({ message: 'Навык удален' });
